@@ -136,6 +136,14 @@ pub use self::tuntap_interface::TunTapInterface;
 #[cfg(feature = "proto-ipv4-fragmentation")]
 pub const IPV4_FRAGMENT_PAYLOAD_ALIGNMENT: usize = 8;
 
+#[cfg(feature = "packetmeta-timestamp")]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Default)]
+struct Timestamp {
+    pub seconds: u32,
+    pub quarter_nanos: u32,
+}
+
 /// Metadata associated to a packet.
 ///
 /// The packet metadata is a set of attributes associated to network packets
@@ -168,6 +176,8 @@ pub const IPV4_FRAGMENT_PAYLOAD_ALIGNMENT: usize = 8;
 pub struct PacketMeta {
     #[cfg(feature = "packetmeta-id")]
     pub id: u32,
+    #[cfg(feature = "packetmeta-timestamp")]
+    pub timestamp: Timestamp,
 }
 
 /// A description of checksum behavior for a particular protocol.

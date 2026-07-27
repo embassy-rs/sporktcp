@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use smoltcp::wire::{Ieee802154Frame, Ieee802154Repr};
+use xarxa::wire::{Ieee802154Frame, Ieee802154Repr};
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(frame) = Ieee802154Frame::new_checked(data) {

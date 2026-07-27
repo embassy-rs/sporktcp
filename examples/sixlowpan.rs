@@ -10,7 +10,7 @@
 //! the `wpan-hwsim` tool.
 //!
 //! We'll configure Linux to speak 6lowpan on `wpan0`, and leave `wpan1`
-//! unconfigured so smoltcp can use it with a raw socket.
+//! unconfigured so xarxa can use it with a raw socket.
 //!
 //! # Setup
 //!
@@ -46,12 +46,12 @@ use log::debug;
 use std::os::unix::io::AsRawFd;
 use std::str;
 
-use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::phy::{Device, Medium, RawSocket, wait as phy_wait};
-use smoltcp::socket::tcp;
-use smoltcp::socket::udp;
-use smoltcp::time::Instant;
-use smoltcp::wire::{EthernetAddress, Ieee802154Address, Ieee802154Pan, IpAddress, IpCidr};
+use xarxa::iface::{Config, Interface, SocketSet};
+use xarxa::phy::{Device, Medium, RawSocket, wait as phy_wait};
+use xarxa::socket::tcp;
+use xarxa::socket::udp;
+use xarxa::time::Instant;
+use xarxa::wire::{EthernetAddress, Ieee802154Address, Ieee802154Pan, IpAddress, IpCidr};
 
 fn main() {
     utils::setup_logging("");
@@ -71,7 +71,7 @@ fn main() {
         Medium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(smoltcp::wire::HardwareAddress::Ip),
+        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
         Medium::Ieee802154 => Config::new(
             Ieee802154Address::Extended([0x1a, 0x0b, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42]).into(),
         ),

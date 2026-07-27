@@ -15,7 +15,7 @@ pub trait Fuzzer {
 ///
 /// A fuzz injector is a device that alters packets traversing through it according to the
 /// directions of a guided fuzzer. It is designed to support fuzzing internal state machines inside
-/// smoltcp, and is not for production use.
+/// xarxa, and is not for production use.
 #[allow(unused)]
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]

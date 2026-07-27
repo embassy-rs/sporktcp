@@ -4,11 +4,11 @@ use log::debug;
 use std::fmt::Write;
 use std::os::unix::io::AsRawFd;
 
-use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::phy::{Device, Medium, wait as phy_wait};
-use smoltcp::socket::{tcp, udp};
-use smoltcp::time::{Duration, Instant};
-use smoltcp::wire::{EthernetAddress, IpAddress, IpCidr, Ipv4Address, Ipv6Address};
+use xarxa::iface::{Config, Interface, SocketSet};
+use xarxa::phy::{Device, Medium, wait as phy_wait};
+use xarxa::socket::{tcp, udp};
+use xarxa::time::{Duration, Instant};
+use xarxa::wire::{EthernetAddress, IpAddress, IpCidr, Ipv4Address, Ipv6Address};
 
 fn main() {
     utils::setup_logging("");
@@ -28,7 +28,7 @@ fn main() {
         Medium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(smoltcp::wire::HardwareAddress::Ip),
+        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
         Medium::Ieee802154 => todo!(),
     };
 

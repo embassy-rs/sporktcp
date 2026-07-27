@@ -426,7 +426,7 @@ impl InterfaceInner {
                             IgmpVersion::Version1 => Duration::from_millis(100),
                             IgmpVersion::Version2 => {
                                 // No dependence on a random generator
-                                // (see [#24](https://github.com/m-labs/smoltcp/issues/24))
+                                // (see [#24](https://github.com/m-labs/xarxa/issues/24))
                                 // but at least spread reports evenly across max_resp_time.
                                 let intervals = ipv4_multicast_group_count as u32 + 1;
                                 max_resp_time / intervals
@@ -480,7 +480,7 @@ impl InterfaceInner {
                 next_header: IpProtocol::Igmp,
                 payload_len: igmp_repr.buffer_len(),
                 hop_limit: 1,
-                // [#183](https://github.com/m-labs/smoltcp/issues/183).
+                // [#183](https://github.com/m-labs/xarxa/issues/183).
             },
             IpPayload::Igmp(igmp_repr),
         );

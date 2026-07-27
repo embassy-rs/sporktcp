@@ -1,6 +1,6 @@
 //! 6lowpan benchmark example
 //!
-//! This example runs a simple TCP throughput benchmark using the 6lowpan implementation in smoltcp
+//! This example runs a simple TCP throughput benchmark using the 6lowpan implementation in xarxa
 //! It is designed to run using the Linux ieee802154/6lowpan support,
 //! using mac802154_hwsim.
 //!
@@ -11,7 +11,7 @@
 //! the `wpan-hwsim` tool.
 //!
 //! We'll configure Linux to speak 6lowpan on `wpan0`, and leave `wpan1`
-//! unconfigured so smoltcp can use it with a raw socket.
+//! unconfigured so xarxa can use it with a raw socket.
 //!
 //!
 //!
@@ -46,19 +46,19 @@ mod utils;
 use std::os::unix::io::AsRawFd;
 use std::str;
 
-use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::phy::{Device, Medium, RawSocket, wait as phy_wait};
-use smoltcp::socket::tcp;
-use smoltcp::wire::{EthernetAddress, Ieee802154Address, Ieee802154Pan, IpAddress, IpCidr};
+use xarxa::iface::{Config, Interface, SocketSet};
+use xarxa::phy::{Device, Medium, RawSocket, wait as phy_wait};
+use xarxa::socket::tcp;
+use xarxa::wire::{EthernetAddress, Ieee802154Address, Ieee802154Pan, IpAddress, IpCidr};
 
 //For benchmark
-use smoltcp::time::{Duration, Instant};
 use std::cmp;
 use std::io::{Read, Write};
 use std::net::SocketAddrV6;
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
+use xarxa::time::{Duration, Instant};
 
 use std::fs;
 
@@ -151,7 +151,7 @@ fn main() {
         Medium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(smoltcp::wire::HardwareAddress::Ip),
+        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
         Medium::Ieee802154 => Config::new(
             Ieee802154Address::Extended([0x1a, 0x0b, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42]).into(),
         ),

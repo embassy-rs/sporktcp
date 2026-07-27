@@ -7,11 +7,11 @@ use std::os::unix::io::AsRawFd;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
-use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::phy::{Device, Medium, wait as phy_wait};
-use smoltcp::socket::tcp;
-use smoltcp::time::{Duration, Instant};
-use smoltcp::wire::{EthernetAddress, IpAddress, IpCidr};
+use xarxa::iface::{Config, Interface, SocketSet};
+use xarxa::phy::{Device, Medium, wait as phy_wait};
+use xarxa::socket::tcp;
+use xarxa::time::{Duration, Instant};
+use xarxa::wire::{EthernetAddress, IpAddress, IpCidr};
 
 const AMOUNT: usize = 1_000_000_000;
 
@@ -90,7 +90,7 @@ fn main() {
         Medium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(smoltcp::wire::HardwareAddress::Ip),
+        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
         Medium::Ieee802154 => todo!(),
     };
     config.random_seed = rand::random();

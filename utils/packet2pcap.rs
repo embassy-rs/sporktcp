@@ -1,11 +1,11 @@
 use getopts::Options;
-use smoltcp::phy::{PcapLinkType, PcapSink};
-use smoltcp::time::Instant;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read};
 use std::path::Path;
 use std::process::exit;
+use xarxa::phy::{PcapLinkType, PcapSink};
+use xarxa::time::Instant;
 
 fn convert(
     packet_filename: &Path,

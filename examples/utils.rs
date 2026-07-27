@@ -13,10 +13,10 @@ use std::str::{self, FromStr};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(feature = "phy-tuntap_interface")]
-use smoltcp::phy::TunTapInterface;
-use smoltcp::phy::{Device, FaultInjector, Medium, Tracer};
-use smoltcp::phy::{PcapMode, PcapWriter};
-use smoltcp::time::{Duration, Instant};
+use xarxa::phy::TunTapInterface;
+use xarxa::phy::{Device, FaultInjector, Medium, Tracer};
+use xarxa::phy::{PcapMode, PcapWriter};
+use xarxa::time::{Duration, Instant};
 
 #[cfg(feature = "log")]
 pub fn setup_logging_with_clock<F>(filter: &str, since_startup: F)
@@ -27,12 +27,12 @@ where
         .format(move |buf, record| {
             let elapsed = since_startup();
             let timestamp = format!("[{elapsed}]");
-            if record.target().starts_with("smoltcp::") {
+            if record.target().starts_with("xarxa::") {
                 writeln!(
                     buf,
                     "\x1b[0m{} ({}): {}\x1b[0m",
                     timestamp,
-                    record.target().replace("smoltcp::", ""),
+                    record.target().replace("xarxa::", ""),
                     record.args()
                 )
             } else if record.level() == Level::Trace {

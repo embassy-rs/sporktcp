@@ -8,16 +8,16 @@ mod utils;
 use core::str;
 use log::{debug, error, info};
 
-use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::phy::{Device, Loopback, Medium};
-use smoltcp::socket::tcp;
-use smoltcp::time::{Duration, Instant};
-use smoltcp::wire::{EthernetAddress, IpAddress, IpCidr};
+use xarxa::iface::{Config, Interface, SocketSet};
+use xarxa::phy::{Device, Loopback, Medium};
+use xarxa::socket::tcp;
+use xarxa::time::{Duration, Instant};
+use xarxa::wire::{EthernetAddress, IpAddress, IpCidr};
 
 #[cfg(not(feature = "std"))]
 mod mock {
     use core::cell::Cell;
-    use smoltcp::time::{Duration, Instant};
+    use xarxa::time::{Duration, Instant};
 
     #[derive(Debug)]
     #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -40,9 +40,9 @@ mod mock {
 
 #[cfg(feature = "std")]
 mod mock {
-    use smoltcp::time::{Duration, Instant};
     use std::sync::Arc;
     use std::sync::atomic::{AtomicU64, Ordering};
+    use xarxa::time::{Duration, Instant};
 
     #[derive(Debug, Clone)]
     #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -84,7 +84,7 @@ fn main() {
         Medium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(smoltcp::wire::HardwareAddress::Ip),
+        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
         Medium::Ieee802154 => todo!(),
     };
 
@@ -98,7 +98,7 @@ fn main() {
     // Create sockets
     let server_socket = {
         // It is not strictly necessary to use a `static mut` and unsafe code here, but
-        // on embedded systems that smoltcp targets it is far better to allocate the data
+        // on embedded systems that xarxa targets it is far better to allocate the data
         // statically to verify that it fits into RAM rather than get undefined behavior
         // when stack overflows.
         static mut TCP_SERVER_RX_DATA: [u8; 1024] = [0; 1024];

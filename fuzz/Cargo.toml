@@ -1,5 +1,5 @@
 [package]
-name = "smoltcp-fuzz"
+name = "xarxa-fuzz"
 version = "0.0.1"
 authors = ["Automatically generated"]
 publish = false
@@ -9,13 +9,13 @@ edition = "2018"
 cargo-fuzz = true
 
 [features]
-log = ["dep:log", "smoltcp/log", "dep:env_logger"]
+log = ["dep:log", "xarxa/log", "dep:env_logger"]
 
 [dependencies]
 libfuzzer-sys = "0.4"
 arbitrary = { version = "1", features = ["derive"] }
 getopts = "0.2"
-smoltcp = { path = "..", default-features = false, features = [
+xarxa = { path = "..", default-features = false, features = [
     "std",
     "medium-ethernet", "medium-ieee802154",
     "proto-ipv4", "proto-dhcpv4", "proto-ipv6", "proto-sixlowpan",

@@ -2,11 +2,11 @@ mod utils;
 
 use log::debug;
 
-use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::phy::{Device, Loopback, Medium};
-use smoltcp::socket::tcp;
-use smoltcp::time::Instant;
-use smoltcp::wire::{EthernetAddress, IpAddress, IpCidr};
+use xarxa::iface::{Config, Interface, SocketSet};
+use xarxa::phy::{Device, Loopback, Medium};
+use xarxa::socket::tcp;
+use xarxa::time::Instant;
+use xarxa::wire::{EthernetAddress, IpAddress, IpCidr};
 
 fn main() {
     let device = Loopback::new(Medium::Ethernet);
@@ -26,7 +26,7 @@ fn main() {
         Medium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(smoltcp::wire::HardwareAddress::Ip),
+        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
         Medium::Ieee802154 => todo!(),
     };
 

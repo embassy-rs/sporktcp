@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use smoltcp::wire::*;
+use xarxa::wire::*;
 
 fuzz_target!(|data: &[u8]| {
     format!(

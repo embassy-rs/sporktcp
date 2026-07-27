@@ -646,7 +646,7 @@ impl<'a> Socket<'a> {
     /// `CongestionControl::None` indicates that no congestion control is applied.
     /// Options `CongestionControl::Cubic` and `CongestionControl::Reno` are also available.
     /// To use Reno and Cubic, please enable the `socket-tcp-reno` and `socket-tcp-cubic` features
-    /// in the `smoltcp` crate, respectively.
+    /// in the `xarxa` crate, respectively.
     ///
     /// `CongestionControl::Reno` is a classic congestion control algorithm valued for its simplicity.
     /// Despite having a lower algorithmic complexity than `Cubic`,
@@ -981,9 +981,9 @@ impl<'a> Socket<'a> {
     /// #     feature = "proto-ipv4",
     /// # ))]
     /// # {
-    /// # use smoltcp::socket::tcp::{Socket, SocketBuffer};
-    /// # use smoltcp::iface::Interface;
-    /// # use smoltcp::wire::IpAddress;
+    /// # use xarxa::socket::tcp::{Socket, SocketBuffer};
+    /// # use xarxa::iface::Interface;
+    /// # use xarxa::wire::IpAddress;
     /// #
     /// # fn get_ephemeral_port() -> u16 {
     /// #     49152
@@ -2279,7 +2279,7 @@ impl<'a> Socket<'a> {
         //  2) a segment arrives that fills in all or part of a gap in sequence space.
         if !self.assembler.is_empty() || !assembler_was_empty {
             // Note that we change the transmitter state here.
-            // This is fine because smoltcp assumes that it can always transmit zero or one
+            // This is fine because xarxa assumes that it can always transmit zero or one
             // packets for every packet it receives.
             tcp_trace!("ACKing incoming segment");
             Some(self.ack_reply(ip_repr, repr))
@@ -5479,7 +5479,7 @@ mod test {
 
         // Send the wrong seq again, check that the challenge ack is correctly updated
         // The ack number must be updated even if we don't call dispatch on the socket
-        // See https://github.com/smoltcp-rs/smoltcp/issues/338
+        // See https://github.com/xarxa-rs/xarxa/issues/338
         send!(
             s,
             time 2000,
@@ -8703,7 +8703,7 @@ mod test {
         );
 
         // assert that user-configurable settings are kept,
-        // see https://github.com/smoltcp-rs/smoltcp/issues/601.
+        // see https://github.com/xarxa-rs/xarxa/issues/601.
         s.reset();
         assert_eq!(s.hop_limit(), Some(0x2a));
     }

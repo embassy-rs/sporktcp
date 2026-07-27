@@ -162,9 +162,9 @@ pub struct TracerPacket<'a> {
 /// Direction on which packet is being traced
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TracerDirection {
-    /// Packet is received by Smoltcp interface
+    /// Packet is received by xarxa interface
     RX,
-    /// Packet is transmitted by Smoltcp interface
+    /// Packet is transmitted by xarxa interface
     TX,
 }
 

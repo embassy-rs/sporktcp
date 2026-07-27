@@ -2,11 +2,11 @@ mod utils;
 
 use std::os::unix::io::AsRawFd;
 
-use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::phy::{Device, Medium, wait as phy_wait};
-use smoltcp::socket::{raw, udp};
-use smoltcp::time::Instant;
-use smoltcp::wire::{
+use xarxa::iface::{Config, Interface, SocketSet};
+use xarxa::phy::{Device, Medium, wait as phy_wait};
+use xarxa::socket::{raw, udp};
+use xarxa::time::Instant;
+use xarxa::wire::{
     EthernetAddress, IgmpPacket, IgmpRepr, IpAddress, IpCidr, IpProtocol, IpVersion, Ipv4Address,
     Ipv4Packet, Ipv6Address,
 };
@@ -32,7 +32,7 @@ fn main() {
         Medium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(smoltcp::wire::HardwareAddress::Ip),
+        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
         Medium::Ieee802154 => todo!(),
     };
     config.random_seed = rand::random();

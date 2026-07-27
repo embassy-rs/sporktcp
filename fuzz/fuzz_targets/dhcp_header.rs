@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use smoltcp::wire::{DhcpPacket, DhcpRepr};
+use xarxa::wire::{DhcpPacket, DhcpRepr};
 
 fuzz_target!(|data: &[u8]| {
     let _ = match DhcpPacket::new_checked(data) {

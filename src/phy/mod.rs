@@ -20,8 +20,8 @@ An implementation of the [Device](trait.Device.html) trait for a simple hardware
 Ethernet controller could look as follows:
 
 ```rust
-use smoltcp::phy::{self, DeviceCapabilities, Device, Medium};
-use smoltcp::time::Instant;
+use xarxa::phy::{self, DeviceCapabilities, Device, Medium};
+use xarxa::time::Instant;
 
 struct StmPhy {
     rx_buffer: [u8; 1536],
@@ -156,7 +156,7 @@ pub const IPV4_FRAGMENT_PAYLOAD_ALIGNMENT: usize = 8;
 /// fields a non-breaking change.
 ///
 /// ```rust
-/// let mut meta = smoltcp::phy::PacketMeta::default();
+/// let mut meta = xarxa::phy::PacketMeta::default();
 /// #[cfg(feature = "packetmeta-id")]
 /// {
 ///     meta.id = 15;

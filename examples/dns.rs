@@ -1,12 +1,12 @@
 mod utils;
 
-use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::phy::Device;
-use smoltcp::phy::{Medium, wait as phy_wait};
-use smoltcp::socket::dns::{self, GetQueryResultError};
-use smoltcp::time::Instant;
-use smoltcp::wire::{DnsQueryType, EthernetAddress, IpAddress, IpCidr, Ipv4Address, Ipv6Address};
 use std::os::unix::io::AsRawFd;
+use xarxa::iface::{Config, Interface, SocketSet};
+use xarxa::phy::Device;
+use xarxa::phy::{Medium, wait as phy_wait};
+use xarxa::socket::dns::{self, GetQueryResultError};
+use xarxa::time::Instant;
+use xarxa::wire::{DnsQueryType, EthernetAddress, IpAddress, IpCidr, Ipv4Address, Ipv6Address};
 
 fn main() {
     utils::setup_logging("warn");
@@ -28,7 +28,7 @@ fn main() {
         Medium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(smoltcp::wire::HardwareAddress::Ip),
+        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
         Medium::Ieee802154 => todo!(),
     };
     config.random_seed = rand::random();

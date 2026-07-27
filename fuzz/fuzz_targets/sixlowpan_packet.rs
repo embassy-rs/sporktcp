@@ -1,6 +1,6 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use smoltcp::{phy::ChecksumCapabilities, wire::*};
+use xarxa::{phy::ChecksumCapabilities, wire::*};
 
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, arbitrary::Arbitrary)]
 pub enum AddressFuzzer {
@@ -182,7 +182,8 @@ fuzz_target!(|fuzz: SixlowpanPacketFuzzer| {
                                 if let Ok(frame) = Ipv6RoutingHeader::new_checked(payload) {
                                     if let Ok(repr) = Ipv6RoutingRepr::parse(&frame) {
                                         let mut buffer = vec![0; repr.buffer_len()];
-                                        let mut packet = Ipv6RoutingHeader::new_unchecked(&mut buffer[..]);
+                                        let mut packet =
+                                            Ipv6RoutingHeader::new_unchecked(&mut buffer[..]);
                                         repr.emit(&mut packet);
                                     }
                                 }

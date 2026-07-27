@@ -1,20 +1,20 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
-use smoltcp::iface::{Config, Interface, SocketSet};
-use smoltcp::phy::{Loopback, Medium};
-use smoltcp::socket::tcp;
-use smoltcp::time::{Duration, Instant};
-use smoltcp::wire::{EthernetAddress, IpAddress, IpCidr};
+use xarxa::iface::{Config, Interface, SocketSet};
+use xarxa::phy::{Loopback, Medium};
+use xarxa::socket::tcp;
+use xarxa::time::{Duration, Instant};
+use xarxa::wire::{EthernetAddress, IpAddress, IpCidr};
 
-#[cfg(feature = "log")]
-use smoltcp::phy::{PcapMode, PcapWriter, Tracer};
 #[cfg(feature = "log")]
 use std::fs::File;
+#[cfg(feature = "log")]
+use xarxa::phy::{PcapMode, PcapWriter, Tracer};
 
 mod mock {
-    use smoltcp::time::{Duration, Instant};
-    use std::sync::Arc;
     use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::Arc;
+    use xarxa::time::{Duration, Instant};
 
     #[derive(Debug, Clone)]
     pub struct Clock(Arc<AtomicU64>);
@@ -61,7 +61,7 @@ impl TcpHeaderFuzzer {
     }
 }
 
-impl smoltcp::phy::Fuzzer for TcpHeaderFuzzer {
+impl xarxa::phy::Fuzzer for TcpHeaderFuzzer {
     fn fuzz_packet(&mut self, frame_data: &mut [u8]) {
         loop {
             let len = self.read_u8() as usize;
@@ -81,7 +81,7 @@ impl smoltcp::phy::Fuzzer for TcpHeaderFuzzer {
 
 struct EmptyFuzzer();
 
-impl smoltcp::phy::Fuzzer for EmptyFuzzer {
+impl xarxa::phy::Fuzzer for EmptyFuzzer {
     fn fuzz_packet(&mut self, _: &mut [u8]) {}
 }
 
@@ -92,7 +92,7 @@ fuzz_target!(|data: &[u8]| {
     let clock = mock::Clock::new();
 
     let device = Loopback::new(Medium::Ethernet);
-    let device = smoltcp::phy::FuzzInjector::new(device, EmptyFuzzer(), TcpHeaderFuzzer::new(data));
+    let device = xarxa::phy::FuzzInjector::new(device, EmptyFuzzer(), TcpHeaderFuzzer::new(data));
 
     #[cfg(feature = "log")]
     let device = PcapWriter::new(

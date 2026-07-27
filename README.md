@@ -1,27 +1,27 @@
-# smoltcp
+# xarxa
 
-[![docs.rs](https://docs.rs/smoltcp/badge.svg)](https://docs.rs/smoltcp)
-[![crates.io](https://img.shields.io/crates/v/smoltcp.svg)](https://crates.io/crates/smoltcp)
-[![crates.io](https://img.shields.io/crates/d/smoltcp.svg)](https://crates.io/crates/smoltcp)
-[![crates.io](https://img.shields.io/matrix/smoltcp:matrix.org)](https://matrix.to/#/#smoltcp:matrix.org)
-[![codecov](https://codecov.io/github/smoltcp-rs/smoltcp/branch/master/graph/badge.svg?token=3KbAR9xH1t)](https://codecov.io/github/smoltcp-rs/smoltcp)
+[![docs.rs](https://docs.rs/xarxa/badge.svg)](https://docs.rs/xarxa)
+[![crates.io](https://img.shields.io/crates/v/xarxa.svg)](https://crates.io/crates/xarxa)
+[![crates.io](https://img.shields.io/crates/d/xarxa.svg)](https://crates.io/crates/xarxa)
+[![crates.io](https://img.shields.io/matrix/xarxa:matrix.org)](https://matrix.to/#/#xarxa:matrix.org)
+[![codecov](https://codecov.io/github/xarxa-rs/xarxa/branch/master/graph/badge.svg?token=3KbAR9xH1t)](https://codecov.io/github/xarxa-rs/xarxa)
 
-_smoltcp_ is a standalone, event-driven TCP/IP stack that is designed for bare-metal,
+_xarxa_ is a standalone, event-driven TCP/IP stack that is designed for bare-metal,
 real-time systems. Its design goals are simplicity and robustness. Its design anti-goals
 include complicated compile-time computations, such as macro or type tricks, even
 at cost of performance degradation.
 
-_smoltcp_ does not need heap allocation *at all*, is [extensively documented][docs],
+_xarxa_ does not need heap allocation *at all*, is [extensively documented][docs],
 and compiles on stable Rust 1.91 and later.
 
-_smoltcp_ achieves [~Gbps of throughput](#examplesbenchmarkrs) when tested against
+_xarxa_ achieves [~Gbps of throughput](#examplesbenchmarkrs) when tested against
 the Linux TCP stack in loopback mode.
 
-[docs]: https://docs.rs/smoltcp/
+[docs]: https://docs.rs/xarxa/
 
 ## Features
 
-_smoltcp_ is missing many widely deployed features, usually because no one implemented them yet.
+_xarxa_ is missing many widely deployed features, usually because no one implemented them yet.
 To set expectations right, both implemented and omitted features are listed.
 
 ### Media layer
@@ -140,11 +140,11 @@ The TCP protocol is supported over IPv4 and IPv6, and server and client TCP sock
 
 ## Installation
 
-To use the _smoltcp_ library in your project, add the following to `Cargo.toml`:
+To use the _xarxa_ library in your project, add the following to `Cargo.toml`:
 
 ```toml
 [dependencies]
-smoltcp = "0.10.0"
+xarxa = "0.10.0"
 ```
 
 The default configuration assumes a hosted environment, for ease of evaluation.
@@ -152,7 +152,7 @@ You probably want to disable default features and configure them one by one:
 
 ```toml
 [dependencies]
-smoltcp = { version = "0.10.0", default-features = false, features = ["log"] }
+xarxa = { version = "0.10.0", default-features = false, features = ["log"] }
 ```
 
 ## Feature flags
@@ -201,7 +201,7 @@ This feature is disabled by default.
 
 ### Features `phy-raw_socket` and `phy-tuntap_interface`
 
-Enable `smoltcp::phy::RawSocket` and `smoltcp::phy::TunTapInterface`, respectively.
+Enable `xarxa::phy::RawSocket` and `xarxa::phy::TunTapInterface`, respectively.
 
 These features are enabled by default.
 
@@ -221,7 +221,7 @@ Enable [IPv4], [IPv6] and [6LoWPAN] respectively.
 
 ## Configuration
 
-_smoltcp_ has some configuration settings that are set at compile time, affecting sizes
+_xarxa_ has some configuration settings that are set at compile time, affecting sizes
 and counts of buffers.
 
 They can be set in two ways:
@@ -229,8 +229,8 @@ They can be set in two ways:
 - Via Cargo features: enable a feature like `<name>-<value>`. `name` must be in lowercase and
 use dashes instead of underscores. For example. `iface-max-addr-count-3`. Only a selection of values
 is available, check `Cargo.toml` for the list.
-- Via environment variables at build time: set the variable named `SMOLTCP_<value>`. For example
-`SMOLTCP_IFACE_MAX_ADDR_COUNT=3 cargo build`. You can also set them in the `[env]` section of `.cargo/config.toml`.
+- Via environment variables at build time: set the variable named `xarxa_<value>`. For example
+`xarxa_IFACE_MAX_ADDR_COUNT=3 cargo build`. You can also set them in the `[env]` section of `.cargo/config.toml`.
 Any value can be set, unlike with Cargo features.
 
 Environment variables take precedence over Cargo features. If two Cargo features are enabled for the same setting
@@ -295,8 +295,8 @@ The maximum amount of parsed options the IPv6 Hop-by-Hop header can hold. Defaul
 
 ## Hosted usage examples
 
-_smoltcp_, being a freestanding networking stack, needs to be able to transmit and receive
-raw frames. For testing purposes, we will use a regular OS, and run _smoltcp_ in
+_xarxa_, being a freestanding networking stack, needs to be able to transmit and receive
+raw frames. For testing purposes, we will use a regular OS, and run _xarxa_ in
 a userspace process. Only Linux is supported (right now).
 
 On \*nix OSes, transmitting and receiving raw frames normally requires superuser privileges, but
@@ -313,7 +313,7 @@ sudo ip -6 route add fe80::/64 dev tap0
 sudo ip -6 route add fdaa::/64 dev tap0
 ```
 
-It's possible to let _smoltcp_ access Internet by enabling routing for the tap interface:
+It's possible to let _xarxa_ access Internet by enabling routing for the tap interface:
 
 ```sh
 sudo iptables -t nat -A POSTROUTING -s 192.168.69.0/24 -j MASQUERADE
@@ -329,7 +329,7 @@ sudo iptables -A FORWARD -o tap0 -d 192.168.69.0/24 -j ACCEPT
 ### Bridged connection
 
 Instead of the routed connection above, you may also set up a bridged (switched)
-connection. This will make smoltcp speak directly to your LAN, with real ARP, etc.
+connection. This will make xarxa speak directly to your LAN, with real ARP, etc.
 It is needed to run the DHCP example.
 
 NOTE: In this case, the examples' IP configuration must match your LAN's!
@@ -371,7 +371,7 @@ sudo brctl delbr br0
 
 ### Fault injection
 
-In order to demonstrate the response of _smoltcp_ to adverse network conditions, all examples
+In order to demonstrate the response of _xarxa_ to adverse network conditions, all examples
 implement fault injection, available through command-line options:
 
   * The `--drop-chance` option randomly drops packets, with given probability in percents.
@@ -393,7 +393,7 @@ and the `tx: randomly dropping a packet` message indicates that the packet *belo
 ### Packet dumps
 
 All examples provide a `--pcap` option that writes a [libpcap] file containing a view of every
-packet as it is seen by _smoltcp_.
+packet as it is seen by _xarxa_.
 
 [libpcap]: https://wiki.wireshark.org/Development/LibpcapFileFormat
 
@@ -535,7 +535,7 @@ that do. Because of this, only one such example is provided.
 
 ### examples/loopback.rs
 
-_examples/loopback.rs_ sets up _smoltcp_ to talk with itself via a loopback interface.
+_examples/loopback.rs_ sets up _xarxa_ to talk with itself via a loopback interface.
 Although it does not require `std`, this example still requires the `alloc` feature to run, as well as `log`, `proto-ipv4` and `socket-tcp`.
 
 Read its [source code](/examples/loopback.rs), then run it without `std`:
@@ -584,6 +584,6 @@ this benchmark _does_ rely on `std` to be able to measure the time cost.
 
 ## License
 
-_smoltcp_ is distributed under the terms of 0-clause BSD license.
+_xarxa_ is distributed under the terms of 0-clause BSD license.
 
 See [LICENSE-0BSD](LICENSE-0BSD.txt) for details.

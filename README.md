@@ -5,6 +5,8 @@
 [![crates.io](https://img.shields.io/crates/d/xarxa.svg)](https://crates.io/crates/xarxa)
 [![crates.io](https://img.shields.io/matrix/xarxa:matrix.org)](https://matrix.to/#/#xarxa:matrix.org)
 
+> *Xarxa (pronounced "sharsha"): "Network" in Catalan*
+
 _xarxa_ is a standalone, event-driven TCP/IP stack that is designed for bare-metal,
 real-time systems. Its design goals are simplicity and robustness. Its design anti-goals
 include complicated compile-time computations, such as macro or type tricks, even
@@ -17,6 +19,14 @@ _xarxa_ achieves [~Gbps of throughput](#examplesbenchmarkrs) when tested against
 the Linux TCP stack in loopback mode.
 
 [docs]: https://docs.rs/xarxa/
+
+## History
+
+_xarxa_ started out as a fork of [`smoltcp`](https://github.com/smoltcp-rs/smoltcp/). It is now maintained by the Embassy team, including [@dirbaio](https://github.com/Dirbaio) who was a smoltcp maintainer 2020-2026.
+
+The project goal stays unchanged from `smoltcp`: provide a network stack usable in all environments, not tied to Embassy or async in any way. Pull requests for all use cases are welcome.
+
+_xarxa_ is the network stack powering [embassy-net](https://docs.embassy.dev/embassy-net).
 
 ## Features
 

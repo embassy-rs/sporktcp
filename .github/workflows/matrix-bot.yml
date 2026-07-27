@@ -41,7 +41,7 @@ jobs:
             const body = `${prefix}: ${title} - ${url}`;
             const formattedBody = `${prefix}: <a href="${url}">${titleEscaped}</a>`;
 
-            const roomId = '!YoLPkieCYHGzdjUhOK:matrix.org';
+            const roomId = '!dhwQunblxBGhkJOiSx:matrix.org';
             const accessToken = process.env.MATRIX_ACCESS_TOKEN;
 
             const response = await fetch(

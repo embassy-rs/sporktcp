@@ -4,7 +4,6 @@
 [![crates.io](https://img.shields.io/crates/v/xarxa.svg)](https://crates.io/crates/xarxa)
 [![crates.io](https://img.shields.io/crates/d/xarxa.svg)](https://crates.io/crates/xarxa)
 [![crates.io](https://img.shields.io/matrix/xarxa:matrix.org)](https://matrix.to/#/#xarxa:matrix.org)
-[![codecov](https://codecov.io/github/xarxa-rs/xarxa/branch/master/graph/badge.svg?token=3KbAR9xH1t)](https://codecov.io/github/xarxa-rs/xarxa)
 
 _xarxa_ is a standalone, event-driven TCP/IP stack that is designed for bare-metal,
 real-time systems. Its design goals are simplicity and robustness. Its design anti-goals

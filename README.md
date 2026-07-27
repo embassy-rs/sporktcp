@@ -5,7 +5,7 @@
 [![crates.io](https://img.shields.io/crates/d/xarxa.svg)](https://crates.io/crates/xarxa)
 [![crates.io](https://img.shields.io/matrix/xarxa:matrix.org)](https://matrix.to/#/#xarxa:matrix.org)
 
-_xarxa_ is a standalone, event-driven TCP/IP stack that is designed for bare-metal,
+_xarxa_ (pronounced 'sharsha') is a standalone, event-driven TCP/IP stack that is designed for bare-metal,
 real-time systems. Its design goals are simplicity and robustness. Its design anti-goals
 include complicated compile-time computations, such as macro or type tricks, even
 at cost of performance degradation.

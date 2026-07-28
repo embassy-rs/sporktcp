@@ -1,7 +1,7 @@
 #![no_main]
 use libfuzzer_sys::fuzz_target;
 use xarxa::iface::{Config, Interface, SocketSet};
-use xarxa::phy::{Loopback, Medium};
+use xarxa::phy::{DriverMedium, Loopback};
 use xarxa::socket::tcp;
 use xarxa::time::{Duration, Instant};
 use xarxa::wire::{EthernetAddress, IpAddress, IpCidr};
@@ -13,23 +13,34 @@ use xarxa::phy::{PcapMode, PcapWriter, Tracer};
 
 mod mock {
     use std::sync::atomic::{AtomicU64, Ordering};
-    use std::sync::Arc;
     use xarxa::time::{Duration, Instant};
 
+    /// Milliseconds since the clock was created.
+    ///
+    /// This is a global rather than a field of [`Clock`] so that [`now`] can be passed as a
+    /// plain `fn() -> Instant` to the phy middleware.
+    static NOW: AtomicU64 = AtomicU64::new(0);
+
+    /// The current mock time.
+    pub fn now() -> Instant {
+        Instant::from_millis(NOW.load(Ordering::SeqCst) as i64)
+    }
+
     #[derive(Debug, Clone)]
-    pub struct Clock(Arc<AtomicU64>);
+    pub struct Clock;
 
     impl Clock {
         pub fn new() -> Clock {
-            Clock(Arc::new(AtomicU64::new(0)))
+            NOW.store(0, Ordering::SeqCst);
+            Clock
         }
 
         pub fn advance(&self, duration: Duration) {
-            self.0.fetch_add(duration.total_millis(), Ordering::SeqCst);
+            NOW.fetch_add(duration.total_millis(), Ordering::SeqCst);
         }
 
         pub fn elapsed(&self) -> Instant {
-            Instant::from_millis(self.0.load(Ordering::SeqCst) as i64)
+            now()
         }
     }
 }
@@ -91,7 +102,7 @@ fuzz_target!(|data: &[u8]| {
 
     let clock = mock::Clock::new();
 
-    let device = Loopback::new(Medium::Ethernet);
+    let device = Loopback::new(DriverMedium::Ethernet);
     let device = xarxa::phy::FuzzInjector::new(device, EmptyFuzzer(), TcpHeaderFuzzer::new(data));
 
     #[cfg(feature = "log")]
@@ -99,10 +110,11 @@ fuzz_target!(|data: &[u8]| {
         device,
         File::create("fuzz.pcap").expect("cannot open file"),
         PcapMode::Both,
+        mock::now,
     );
 
     #[cfg(feature = "log")]
-    let device = Tracer::new(device, |_timestamp, _printer| {
+    let device = Tracer::new(device, |_printer| {
         log::trace!("{}", _printer);
     });
 

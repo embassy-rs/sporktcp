@@ -127,6 +127,8 @@ pub struct Interface {
 /// exclusively). However, it is still possible to call methods on its `inner` field.
 pub struct InterfaceInner {
     caps: DeviceCapabilities,
+    /// Medium of the device, converted once from `caps.medium`.
+    medium: Medium,
     now: Instant,
     rand: Rand,
 
@@ -206,9 +208,10 @@ impl Interface {
     /// the medium of the device.
     pub fn new(config: Config, device: &mut (impl Device + ?Sized), now: Instant) -> Self {
         let caps = device.capabilities();
+        let medium = Medium::from_driver(caps.medium);
         assert_eq!(
             config.hardware_addr.medium(),
-            caps.medium,
+            medium,
             "The hardware address does not match the medium of the interface."
         );
 
@@ -260,6 +263,7 @@ impl Interface {
             inner: InterfaceInner {
                 now,
                 caps,
+                medium,
                 hardware_addr: config.hardware_addr,
                 ip_addrs: Vec::new(),
                 any_ip: false,
@@ -303,15 +307,12 @@ impl Interface {
     #[cfg(any(feature = "medium-ethernet", feature = "medium-ieee802154"))]
     pub fn hardware_addr(&self) -> HardwareAddress {
         #[cfg(all(feature = "medium-ethernet", not(feature = "medium-ieee802154")))]
-        assert!(self.inner.caps.medium == Medium::Ethernet);
+        assert!(self.inner.medium == Medium::Ethernet);
         #[cfg(all(feature = "medium-ieee802154", not(feature = "medium-ethernet")))]
-        assert!(self.inner.caps.medium == Medium::Ieee802154);
+        assert!(self.inner.medium == Medium::Ieee802154);
 
         #[cfg(all(feature = "medium-ieee802154", feature = "medium-ethernet"))]
-        assert!(
-            self.inner.caps.medium == Medium::Ethernet
-                || self.inner.caps.medium == Medium::Ieee802154
-        );
+        assert!(self.inner.medium == Medium::Ethernet || self.inner.medium == Medium::Ieee802154);
 
         self.inner.hardware_addr
     }
@@ -324,15 +325,12 @@ impl Interface {
     #[cfg(any(feature = "medium-ethernet", feature = "medium-ieee802154"))]
     pub fn set_hardware_addr(&mut self, addr: HardwareAddress) {
         #[cfg(all(feature = "medium-ethernet", not(feature = "medium-ieee802154")))]
-        assert!(self.inner.caps.medium == Medium::Ethernet);
+        assert!(self.inner.medium == Medium::Ethernet);
         #[cfg(all(feature = "medium-ieee802154", not(feature = "medium-ethernet")))]
-        assert!(self.inner.caps.medium == Medium::Ieee802154);
+        assert!(self.inner.medium == Medium::Ieee802154);
 
         #[cfg(all(feature = "medium-ieee802154", feature = "medium-ethernet"))]
-        assert!(
-            self.inner.caps.medium == Medium::Ethernet
-                || self.inner.caps.medium == Medium::Ieee802154
-        );
+        assert!(self.inner.medium == Medium::Ethernet || self.inner.medium == Medium::Ieee802154);
 
         InterfaceInner::check_hardware_addr(&addr);
         self.inner.hardware_addr = addr;
@@ -393,7 +391,7 @@ impl Interface {
             feature = "multicast",
             feature = "medium-ethernet"
         ))]
-        if self.inner.caps.medium == Medium::Ethernet {
+        if self.inner.medium == Medium::Ethernet {
             self.update_solicited_node_groups();
         }
     }
@@ -511,7 +509,7 @@ impl Interface {
     ) -> PollResult {
         self.inner.now = timestamp;
 
-        match self.inner.caps.medium {
+        match self.inner.medium {
             #[cfg(feature = "medium-ieee802154")]
             Medium::Ieee802154 => {
                 #[cfg(feature = "proto-sixlowpan-fragmentation")]
@@ -633,7 +631,7 @@ impl Interface {
         device: &mut (impl Device + ?Sized),
         sockets: &mut SocketSet<'_>,
     ) -> PollIngressSingleResult {
-        let Some((rx_token, tx_token)) = device.receive(self.inner.now) else {
+        let Some((rx_token, tx_token)) = device.receive() else {
             return PollIngressSingleResult::None;
         };
 
@@ -643,7 +641,7 @@ impl Interface {
                 return PollIngressSingleResult::PacketProcessed;
             }
 
-            match self.inner.caps.medium {
+            match self.inner.medium {
                 #[cfg(feature = "medium-ethernet")]
                 Medium::Ethernet => {
                     if let Some(packet) =
@@ -721,7 +719,7 @@ impl Interface {
             let mut neighbor_addr = None;
             let mut respond = |inner: &mut InterfaceInner, meta: PacketMeta, response: Packet| {
                 neighbor_addr = Some(response.ip_repr().dst_addr());
-                let t = device.transmit(inner.now).ok_or_else(|| {
+                let t = device.transmit().ok_or_else(|| {
                     net_debug!("failed to transmit IP: device exhausted");
                     EgressError::Exhausted
                 })?;
@@ -798,7 +796,7 @@ impl Interface {
             };
 
             match result {
-                Err(EgressError::Exhausted) => break, // Device buffer full.
+                Err(EgressError::Exhausted) => break, // Driver buffer full.
                 Err(EgressError::Dispatch) => {
                     // `NeighborCache` already takes care of rate limiting the neighbor discovery
                     // requests from the socket. However, without an additional rate limiting
@@ -835,7 +833,24 @@ impl InterfaceInner {
 
     #[allow(unused)] // unused depending on which sockets are enabled
     pub(crate) fn ip_mtu(&self) -> usize {
-        self.caps.ip_mtu()
+        match self.medium {
+            #[cfg(feature = "medium-ethernet")]
+            Medium::Ethernet => {
+                self.caps.max_transmission_unit - EthernetFrame::<&[u8]>::header_len()
+            }
+            #[cfg(feature = "medium-ip")]
+            Medium::Ip => self.caps.max_transmission_unit,
+            // TODO(thvdveld): what is the MTU for Medium::Ieee802154?
+            #[cfg(feature = "medium-ieee802154")]
+            Medium::Ieee802154 => self.caps.max_transmission_unit,
+        }
+    }
+
+    /// The maximum IPv4 payload fragment size, aligned per spec.
+    #[cfg(feature = "proto-ipv4-fragmentation")]
+    pub(crate) fn max_ipv4_fragment_size(&self, ip_header_len: usize) -> usize {
+        let payload_mtu = self.ip_mtu() - ip_header_len;
+        payload_mtu - (payload_mtu % crate::phy::IPV4_FRAGMENT_PAYLOAD_ALIGNMENT)
     }
 
     #[allow(unused)] // unused depending on which sockets are enabled, and in tests
@@ -1025,7 +1040,7 @@ impl InterfaceInner {
 
     fn has_neighbor(&self, addr: &IpAddress) -> bool {
         match self.route(addr, self.now) {
-            Some(_routed_addr) => match self.caps.medium {
+            Some(_routed_addr) => match self.medium {
                 #[cfg(feature = "medium-ethernet")]
                 Medium::Ethernet => self.neighbor_cache.lookup(&_routed_addr, self.now).found(),
                 #[cfg(feature = "medium-ieee802154")]
@@ -1048,7 +1063,7 @@ impl InterfaceInner {
         Tx: TxToken,
     {
         if self.is_broadcast(dst_addr) {
-            let hardware_addr = match self.caps.medium {
+            let hardware_addr = match self.medium {
                 #[cfg(feature = "medium-ethernet")]
                 Medium::Ethernet => HardwareAddress::Ethernet(EthernetAddress::BROADCAST),
                 #[cfg(feature = "medium-ieee802154")]
@@ -1063,7 +1078,7 @@ impl InterfaceInner {
         if dst_addr.is_multicast() {
             let hardware_addr = match *dst_addr {
                 #[cfg(feature = "proto-ipv4")]
-                IpAddress::Ipv4(addr) => match self.caps.medium {
+                IpAddress::Ipv4(addr) => match self.medium {
                     #[cfg(feature = "medium-ethernet")]
                     Medium::Ethernet => {
                         let b = addr.octets();
@@ -1082,7 +1097,7 @@ impl InterfaceInner {
                     Medium::Ip => unreachable!(),
                 },
                 #[cfg(feature = "proto-ipv6")]
-                IpAddress::Ipv6(addr) => match self.caps.medium {
+                IpAddress::Ipv6(addr) => match self.medium {
                     #[cfg(feature = "medium-ethernet")]
                     Medium::Ethernet => {
                         let b = addr.octets();
@@ -1115,7 +1130,7 @@ impl InterfaceInner {
 
         match dst_addr {
             #[cfg(all(feature = "medium-ethernet", feature = "proto-ipv4"))]
-            IpAddress::Ipv4(dst_addr) if matches!(self.caps.medium, Medium::Ethernet) => {
+            IpAddress::Ipv4(dst_addr) if matches!(self.medium, Medium::Ethernet) => {
                 net_debug!(
                     "address {} not in neighbor cache, sending ARP request",
                     dst_addr
@@ -1205,7 +1220,7 @@ impl InterfaceInner {
         // Dispatch IEEE802.15.4:
 
         #[cfg(feature = "medium-ieee802154")]
-        if matches!(self.caps.medium, Medium::Ieee802154) {
+        if matches!(self.medium, Medium::Ieee802154) {
             let (addr, tx_token) =
                 self.lookup_hardware_addr(tx_token, &ip_repr.dst_addr(), frag)?;
             let addr = addr.ieee802154_or_panic();
@@ -1226,13 +1241,13 @@ impl InterfaceInner {
 
         // Add the size of the Ethernet header if the medium is Ethernet.
         #[cfg(feature = "medium-ethernet")]
-        if matches!(self.caps.medium, Medium::Ethernet) {
+        if matches!(self.medium, Medium::Ethernet) {
             total_len = EthernetFrame::<&[u8]>::buffer_len(total_len);
         }
 
         // If the medium is Ethernet, then we need to retrieve the destination hardware address.
         #[cfg(feature = "medium-ethernet")]
-        let (dst_hardware_addr, mut tx_token) = match self.caps.medium {
+        let (dst_hardware_addr, mut tx_token) = match self.medium {
             Medium::Ethernet => {
                 match self.lookup_hardware_addr(tx_token, &ip_repr.dst_addr(), frag)? {
                     (HardwareAddress::Ethernet(addr), tx_token) => (addr, tx_token),
@@ -1273,7 +1288,7 @@ impl InterfaceInner {
             #[cfg(feature = "proto-ipv4")]
             IpRepr::Ipv4(repr) => {
                 // If we have an IPv4 packet, then we need to check if we need to fragment it.
-                if total_ip_len > self.caps.ip_mtu() {
+                if total_ip_len > self.ip_mtu() {
                     #[cfg(feature = "proto-ipv4-fragmentation")]
                     {
                         net_debug!("start fragmentation");
@@ -1281,12 +1296,11 @@ impl InterfaceInner {
                         // Calculate how much we will send now (including the Ethernet header).
 
                         let ip_header_len = repr.buffer_len();
-                        let first_frag_data_len =
-                            self.caps.max_ipv4_fragment_size(repr.buffer_len());
+                        let first_frag_data_len = self.max_ipv4_fragment_size(repr.buffer_len());
                         let first_frag_ip_len = first_frag_data_len + ip_header_len;
                         let mut tx_len = first_frag_ip_len;
                         #[cfg(feature = "medium-ethernet")]
-                        if matches!(caps.medium, Medium::Ethernet) {
+                        if matches!(self.medium, Medium::Ethernet) {
                             tx_len += EthernetFrame::<&[u8]>::header_len();
                         }
 
@@ -1333,7 +1347,7 @@ impl InterfaceInner {
                         // Transmit the first packet.
                         tx_token.consume(tx_len, |mut tx_buffer| {
                             #[cfg(feature = "medium-ethernet")]
-                            if matches!(self.caps.medium, Medium::Ethernet) {
+                            if matches!(self.medium, Medium::Ethernet) {
                                 emit_ethernet(&ip_repr, tx_buffer);
                                 tx_buffer = &mut tx_buffer[EthernetFrame::<&[u8]>::header_len()..];
                             }
@@ -1362,7 +1376,7 @@ impl InterfaceInner {
                     // No fragmentation is required.
                     tx_token.consume(total_len, |mut tx_buffer| {
                         #[cfg(feature = "medium-ethernet")]
-                        if matches!(self.caps.medium, Medium::Ethernet) {
+                        if matches!(self.medium, Medium::Ethernet) {
                             emit_ethernet(&ip_repr, tx_buffer);
                             tx_buffer = &mut tx_buffer[EthernetFrame::<&[u8]>::header_len()..];
                         }
@@ -1377,13 +1391,13 @@ impl InterfaceInner {
             #[cfg(feature = "proto-ipv6")]
             IpRepr::Ipv6(_) => {
                 // Check if we need to fragment it.
-                if total_ip_len > self.caps.ip_mtu() {
+                if total_ip_len > self.ip_mtu() {
                     net_debug!("IPv6 fragmentation support is unimplemented. Dropping.");
                     Ok(())
                 } else {
                     tx_token.consume(total_len, |mut tx_buffer| {
                         #[cfg(feature = "medium-ethernet")]
-                        if matches!(self.caps.medium, Medium::Ethernet) {
+                        if matches!(self.medium, Medium::Ethernet) {
                             emit_ethernet(&ip_repr, tx_buffer);
                             tx_buffer = &mut tx_buffer[EthernetFrame::<&[u8]>::header_len()..];
                         }

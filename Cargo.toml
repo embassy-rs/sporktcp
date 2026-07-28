@@ -15,10 +15,14 @@ license = "0BSD"
 # ensure that the correct features are enabled.
 autoexamples = false
 
+[workspace]
+members = ["xarxa-driver"]
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
 
 [dependencies]
+xarxa-driver = { version = "0.1.0", path = "xarxa-driver" }
 managed = { version = "0.8", default-features = false, features = ["map"] }
 byteorder = { version = "1.0", default-features = false }
 log = { version = "0.4.4", default-features = false, optional = true }
@@ -42,7 +46,7 @@ idna = { version = "=1.0.1" }
 std = ["managed/std", "alloc"]
 alloc = ["managed/alloc", "defmt?/alloc"]
 verbose = []
-defmt = ["dep:defmt", "heapless/defmt"]
+defmt = ["dep:defmt", "heapless/defmt", "xarxa-driver/defmt"]
 "medium-ethernet" = ["socket"]
 "medium-ip" = ["socket"]
 "medium-ieee802154" = ["socket", "proto-sixlowpan"]
@@ -93,8 +97,8 @@ defmt = ["dep:defmt", "heapless/defmt"]
 # Enable Reno TCP congestion control algorithm, and it is used as a default congestion controller.
 "socket-tcp-reno" = []
 
-"packetmeta-id" = []
-"packetmeta-timestamp" = []
+"packetmeta-id" = ["xarxa-driver/packetmeta-id"]
+"packetmeta-timestamp" = ["xarxa-driver/packetmeta-timestamp"]
 
 "async" = []
 

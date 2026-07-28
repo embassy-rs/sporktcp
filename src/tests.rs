@@ -68,6 +68,11 @@ impl TestingDevice {
     ///
     /// Every packet transmitted through this device will be received through it
     /// in FIFO order.
+    /// The medium of this device.
+    pub(crate) fn medium(&self) -> Medium {
+        self.medium
+    }
+
     pub fn new(medium: Medium) -> Self {
         TestingDevice {
             tx_queue: VecDeque::new(),
@@ -90,14 +95,13 @@ impl Device for TestingDevice {
     type TxToken<'a> = TxToken<'a>;
 
     fn capabilities(&self) -> DeviceCapabilities {
-        DeviceCapabilities {
-            medium: self.medium,
-            max_transmission_unit: self.max_transmission_unit,
-            ..DeviceCapabilities::default()
-        }
+        let mut caps = DeviceCapabilities::default();
+        caps.medium = self.medium.to_driver();
+        caps.max_transmission_unit = self.max_transmission_unit;
+        caps
     }
 
-    fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+    fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         self.rx_queue.pop_front().map(move |buffer| {
             let rx = RxToken { buffer };
             let tx = TxToken {
@@ -107,7 +111,7 @@ impl Device for TestingDevice {
         })
     }
 
-    fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
+    fn transmit(&mut self) -> Option<Self::TxToken<'_>> {
         Some(TxToken {
             queue: &mut self.tx_queue,
         })

@@ -724,7 +724,7 @@ fn test_handle_igmp(#[case] medium: Medium) {
         recv_all(device, timestamp)
             .iter()
             .filter_map(|frame| {
-                let ipv4_packet = match caps.medium {
+                let ipv4_packet = match device.medium() {
                     #[cfg(feature = "medium-ethernet")]
                     Medium::Ethernet => {
                         let eth_frame = EthernetFrame::new_checked(frame).ok()?;
@@ -1539,11 +1539,12 @@ use crate::wire::ipv4::HEADER_LEN;
 #[rstest]
 #[cfg(all(feature = "medium-ip", feature = "proto-ipv4-fragmentation",))]
 fn test_ipv4_fragment_size() {
-    let (_, _, device) = setup(Medium::Ip);
-    let caps = device.capabilities();
+    let (iface, _, _) = setup(Medium::Ip);
     for i in 0..IPV4_FRAGMENT_PAYLOAD_ALIGNMENT {
         assert!(
-            caps.max_ipv4_fragment_size(HEADER_LEN + i)
+            iface
+                .inner
+                .max_ipv4_fragment_size(HEADER_LEN + i)
                 .is_multiple_of(IPV4_FRAGMENT_PAYLOAD_ALIGNMENT)
         );
     }

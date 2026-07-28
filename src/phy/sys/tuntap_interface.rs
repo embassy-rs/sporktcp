@@ -1,5 +1,5 @@
 use super::*;
-use crate::phy::Medium;
+use crate::phy::DriverMedium;
 use std::io;
 use std::os::unix::io::{AsRawFd, RawFd};
 
@@ -16,7 +16,7 @@ impl AsRawFd for TunTapInterfaceDesc {
 }
 
 impl TunTapInterfaceDesc {
-    pub fn new(name: &str, medium: Medium) -> io::Result<TunTapInterfaceDesc> {
+    pub fn new(name: &str, medium: DriverMedium) -> io::Result<TunTapInterfaceDesc> {
         let lower = unsafe {
             let lower = libc::open(c"/dev/net/tun".as_ptr(), libc::O_RDWR | libc::O_NONBLOCK);
             if lower == -1 {
@@ -38,22 +38,23 @@ impl TunTapInterfaceDesc {
 
     fn attach_interface_ifreq(
         lower: libc::c_int,
-        medium: Medium,
+        medium: DriverMedium,
         ifr: &mut ifreq,
     ) -> io::Result<()> {
         let mode = match medium {
             #[cfg(feature = "medium-ip")]
-            Medium::Ip => imp::IFF_TUN,
+            DriverMedium::Ip => imp::IFF_TUN,
             #[cfg(feature = "medium-ethernet")]
-            Medium::Ethernet => imp::IFF_TAP,
+            DriverMedium::Ethernet => imp::IFF_TAP,
             #[cfg(feature = "medium-ieee802154")]
-            Medium::Ieee802154 => todo!(),
+            DriverMedium::Ieee802154 => todo!(),
+            medium => panic!("unsupported medium {medium:?}"),
         };
         ifr.ifr_data = mode | imp::IFF_NO_PI;
         ifreq_ioctl(lower, ifr, imp::TUNSETIFF).map(|_| ())
     }
 
-    fn mtu_ifreq(medium: Medium, ifr: &mut ifreq) -> io::Result<usize> {
+    fn mtu_ifreq(medium: DriverMedium, ifr: &mut ifreq) -> io::Result<usize> {
         let lower = unsafe {
             let lower = libc::socket(libc::AF_INET, libc::SOCK_DGRAM, libc::IPPROTO_IP);
             if lower == -1 {
@@ -75,11 +76,12 @@ impl TunTapInterfaceDesc {
         // xarxa counts the entire Ethernet packet in the MTU, so add the Ethernet header size to it.
         let mtu = match medium {
             #[cfg(feature = "medium-ip")]
-            Medium::Ip => ip_mtu,
+            DriverMedium::Ip => ip_mtu,
             #[cfg(feature = "medium-ethernet")]
-            Medium::Ethernet => ip_mtu + crate::wire::EthernetFrame::<&[u8]>::header_len(),
+            DriverMedium::Ethernet => ip_mtu + crate::wire::EthernetFrame::<&[u8]>::header_len(),
             #[cfg(feature = "medium-ieee802154")]
-            Medium::Ieee802154 => todo!(),
+            DriverMedium::Ieee802154 => todo!(),
+            medium => panic!("unsupported medium {medium:?}"),
         };
 
         Ok(mtu)

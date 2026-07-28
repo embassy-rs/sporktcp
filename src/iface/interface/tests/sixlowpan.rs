@@ -95,7 +95,7 @@ fn test_echo_request_sixlowpan_128_bytes() {
     // computed.
     iface.inner.caps.checksum.icmpv6 = Checksum::None;
 
-    assert_eq!(iface.inner.caps.medium, Medium::Ieee802154);
+    assert_eq!(iface.inner.medium, Medium::Ieee802154);
     let now = iface.inner.now();
 
     iface.inner.neighbor_cache.fill(
@@ -222,7 +222,7 @@ fn test_echo_request_sixlowpan_128_bytes() {
         Instant::now(),
     );
 
-    let tx_token = device.transmit(Instant::now()).unwrap();
+    let tx_token = device.transmit().unwrap();
     iface.inner.dispatch_ieee802154(
         Ieee802154Address::default(),
         tx_token,
@@ -371,7 +371,7 @@ In at rhoncus tortor. Cras blandit tellus diam, varius vestibulum nibh commodo n
         ))
     );
 
-    let tx_token = device.transmit(Instant::now()).unwrap();
+    let tx_token = device.transmit().unwrap();
     iface.inner.dispatch_ieee802154(
         Ieee802154Address::default(),
         tx_token,

@@ -849,11 +849,10 @@ fn test_router_advertisement(#[case] medium: Medium) {
         device: &mut crate::tests::TestingDevice,
         timestamp: Instant,
     ) -> std::vec::Vec<Ipv6Packet<std::vec::Vec<u8>>> {
-        let caps = device.capabilities();
         recv_all(device, timestamp)
             .iter()
             .filter_map(|frame| {
-                let ipv6_packet = match caps.medium {
+                let ipv6_packet = match device.medium() {
                     #[cfg(feature = "medium-ethernet")]
                     Medium::Ethernet => {
                         let eth_frame = EthernetFrame::new_checked(frame).ok()?;
@@ -1529,11 +1528,10 @@ fn test_join_ipv6_multicast_group(#[case] medium: Medium) {
         device: &mut crate::tests::TestingDevice,
         timestamp: Instant,
     ) -> std::vec::Vec<Ipv6Packet<std::vec::Vec<u8>>> {
-        let caps = device.capabilities();
         recv_all(device, timestamp)
             .iter()
             .filter_map(|frame| {
-                let ipv6_packet = match caps.medium {
+                let ipv6_packet = match device.medium() {
                     #[cfg(feature = "medium-ethernet")]
                     Medium::Ethernet => {
                         let eth_frame = EthernetFrame::new_checked(frame).ok()?;
@@ -1656,11 +1654,10 @@ fn test_handle_valid_multicast_query(#[case] medium: Medium) {
         device: &mut crate::tests::TestingDevice,
         timestamp: Instant,
     ) -> std::vec::Vec<Ipv6Packet<std::vec::Vec<u8>>> {
-        let caps = device.capabilities();
         recv_all(device, timestamp)
             .iter()
             .filter_map(|frame| {
-                let ipv6_packet = match caps.medium {
+                let ipv6_packet = match device.medium() {
                     #[cfg(feature = "medium-ethernet")]
                     Medium::Ethernet => {
                         let eth_frame = EthernetFrame::new_checked(frame).ok()?;

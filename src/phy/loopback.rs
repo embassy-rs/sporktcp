@@ -2,14 +2,13 @@ use alloc::collections::VecDeque;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use crate::phy::{self, ChecksumCapabilities, Device, DeviceCapabilities, Medium};
-use crate::time::Instant;
+use crate::phy::{self, ChecksumCapabilities, Device, DeviceCapabilities, DriverMedium};
 
 /// A loopback device.
 #[derive(Debug)]
 pub struct Loopback {
     pub(crate) queue: VecDeque<Vec<u8>>,
-    medium: Medium,
+    medium: DriverMedium,
 }
 
 #[allow(clippy::new_without_default)]
@@ -18,7 +17,7 @@ impl Loopback {
     ///
     /// Every packet transmitted through this device will be received through it
     /// in FIFO order.
-    pub fn new(medium: Medium) -> Loopback {
+    pub fn new(medium: DriverMedium) -> Loopback {
         Loopback {
             queue: VecDeque::new(),
             medium,
@@ -31,15 +30,14 @@ impl Device for Loopback {
     type TxToken<'a> = TxToken<'a>;
 
     fn capabilities(&self) -> DeviceCapabilities {
-        DeviceCapabilities {
-            max_transmission_unit: 65535,
-            medium: self.medium,
-            checksum: ChecksumCapabilities::ignored(),
-            ..DeviceCapabilities::default()
-        }
+        let mut caps = DeviceCapabilities::default();
+        caps.max_transmission_unit = 65535;
+        caps.medium = self.medium;
+        caps.checksum = ChecksumCapabilities::ignored();
+        caps
     }
 
-    fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+    fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         self.queue.pop_front().map(move |buffer| {
             let rx = RxToken { buffer };
             let tx = TxToken {
@@ -49,7 +47,7 @@ impl Device for Loopback {
         })
     }
 
-    fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
+    fn transmit(&mut self) -> Option<Self::TxToken<'_>> {
         Some(TxToken {
             queue: &mut self.queue,
         })

@@ -47,7 +47,7 @@ use std::os::unix::io::AsRawFd;
 use std::str;
 
 use xarxa::iface::{Config, Interface, SocketSet};
-use xarxa::phy::{Device, Medium, RawSocket, wait as phy_wait};
+use xarxa::phy::{Device, DriverMedium, RawSocket, wait as phy_wait};
 use xarxa::socket::tcp;
 use xarxa::wire::{EthernetAddress, Ieee802154Address, Ieee802154Pan, IpAddress, IpCidr};
 
@@ -134,7 +134,7 @@ fn main() {
 
     let mut matches = utils::parse_options(&opts, free);
 
-    let device = RawSocket::new("wpan1", Medium::Ieee802154).unwrap();
+    let device = RawSocket::new("wpan1", DriverMedium::Ieee802154).unwrap();
 
     let fd = device.as_raw_fd();
     let mut device =
@@ -148,13 +148,14 @@ fn main() {
 
     // Create interface
     let mut config = match device.capabilities().medium {
-        Medium::Ethernet => {
+        DriverMedium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
-        Medium::Ieee802154 => Config::new(
+        DriverMedium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
+        DriverMedium::Ieee802154 => Config::new(
             Ieee802154Address::Extended([0x1a, 0x0b, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42]).into(),
         ),
+        medium => todo!("{medium:?}"),
     };
     config.random_seed = rand::random();
     config.pan_id = Some(Ieee802154Pan(0xbeef));

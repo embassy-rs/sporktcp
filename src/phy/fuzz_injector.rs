@@ -1,5 +1,4 @@
 use crate::phy::{self, Device, DeviceCapabilities};
-use crate::time::Instant;
 use alloc::vec::Vec;
 
 // This could be fixed once associated consts are stable.
@@ -64,8 +63,8 @@ where
         caps
     }
 
-    fn receive(&mut self, timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
-        self.inner.receive(timestamp).map(|(rx_token, tx_token)| {
+    fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+        self.inner.receive().map(|(rx_token, tx_token)| {
             let rx = RxToken {
                 fuzzer: &mut self.fuzz_rx,
                 token: rx_token,
@@ -78,8 +77,8 @@ where
         })
     }
 
-    fn transmit(&mut self, timestamp: Instant) -> Option<Self::TxToken<'_>> {
-        self.inner.transmit(timestamp).map(|token| TxToken {
+    fn transmit(&mut self) -> Option<Self::TxToken<'_>> {
+        self.inner.transmit().map(|token| TxToken {
             fuzzer: &mut self.fuzz_tx,
             token: token,
         })

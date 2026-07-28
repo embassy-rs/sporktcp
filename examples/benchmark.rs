@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 use xarxa::iface::{Config, Interface, SocketSet};
-use xarxa::phy::{Device, Medium, wait as phy_wait};
+use xarxa::phy::{Device, DriverMedium, wait as phy_wait};
 use xarxa::socket::tcp;
 use xarxa::time::{Duration, Instant};
 use xarxa::wire::{EthernetAddress, IpAddress, IpCidr};
@@ -87,11 +87,11 @@ fn main() {
     let tcp2_socket = tcp::Socket::new(tcp2_rx_buffer, tcp2_tx_buffer);
 
     let mut config = match device.capabilities().medium {
-        Medium::Ethernet => {
+        DriverMedium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
-        Medium::Ieee802154 => todo!(),
+        DriverMedium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
+        medium => todo!("{medium:?}"),
     };
     config.random_seed = rand::random();
 

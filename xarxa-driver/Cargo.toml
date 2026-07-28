@@ -1,0 +1,24 @@
+[package]
+name = "xarxa-driver"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91"
+description = "Driver trait for the `xarxa` TCP/IP network stack."
+documentation = "https://docs.rs/xarxa-driver/"
+homepage = "https://github.com/embassy-rs/xarxa"
+repository = "https://github.com/embassy-rs/xarxa.git"
+readme = "README.md"
+keywords = ["ip", "tcp", "udp", "ethernet", "network"]
+categories = ["embedded", "network-programming"]
+license = "0BSD"
+
+[dependencies]
+defmt = { version = "1.0.1", optional = true }
+
+[features]
+defmt = ["dep:defmt"]
+
+# Enable the `PacketMeta::id` field.
+"packetmeta-id" = []
+# Enable the `PacketMeta::timestamp` field.
+"packetmeta-timestamp" = []

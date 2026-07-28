@@ -6,7 +6,7 @@ use std::str::{self, FromStr};
 use url::Url;
 
 use xarxa::iface::{Config, Interface, SocketSet};
-use xarxa::phy::{Device, Medium, wait as phy_wait};
+use xarxa::phy::{Device, DriverMedium, wait as phy_wait};
 use xarxa::socket::tcp;
 use xarxa::time::Instant;
 use xarxa::wire::{EthernetAddress, IpAddress, IpCidr, Ipv4Address, Ipv6Address};
@@ -30,11 +30,11 @@ fn main() {
 
     // Create interface
     let mut config = match device.capabilities().medium {
-        Medium::Ethernet => {
+        DriverMedium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
-        Medium::Ieee802154 => todo!(),
+        DriverMedium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
+        medium => todo!("{medium:?}"),
     };
     config.random_seed = rand::random();
 

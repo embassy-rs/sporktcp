@@ -70,6 +70,10 @@ check() {
 
     cargo +$version check --examples
 
+    # The driver crate is versioned separately, check it on its own.
+    cargo +$version check -p xarxa-driver
+    cargo +$version check -p xarxa-driver --features defmt,packetmeta-id,packetmeta-timestamp
+
     if [[ $version == "nightly" ]]; then
         cargo +$version check --benches
     fi
@@ -78,7 +82,7 @@ check() {
 clippy() {
     rustup toolchain install $MSRV
     rustup component add clippy --toolchain=$MSRV
-    cargo +$MSRV clippy --tests --examples -- -D warnings
+    cargo +$MSRV clippy --workspace --tests --examples -- -D warnings
 }
 
 build_16bit() {

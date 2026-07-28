@@ -14,7 +14,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(feature = "phy-tuntap_interface")]
 use xarxa::phy::TunTapInterface;
-use xarxa::phy::{Device, FaultInjector, Medium, Tracer};
+use xarxa::phy::{Device, DriverMedium, FaultInjector, Tracer};
 use xarxa::phy::{PcapMode, PcapWriter};
 use xarxa::time::{Duration, Instant};
 
@@ -101,8 +101,8 @@ pub fn parse_tuntap_options(matches: &mut Matches) -> TunTapInterface {
     let tun = matches.opt_str("tun");
     let tap = matches.opt_str("tap");
     match (tun, tap) {
-        (Some(tun), None) => TunTapInterface::new(&tun, Medium::Ip).unwrap(),
-        (None, Some(tap)) => TunTapInterface::new(&tap, Medium::Ethernet).unwrap(),
+        (Some(tun), None) => TunTapInterface::new(&tun, DriverMedium::Ip).unwrap(),
+        (None, Some(tap)) => TunTapInterface::new(&tap, DriverMedium::Ethernet).unwrap(),
         _ => panic!("You must specify exactly one of --tun or --tap"),
     }
 }
@@ -200,14 +200,15 @@ where
         } else {
             PcapMode::Both
         },
+        Instant::now,
     );
 
-    let device = Tracer::new(device, |_timestamp, _printer| {
+    let device = Tracer::new(device, |_printer| {
         #[cfg(feature = "log")]
         trace!("{}", _printer);
     });
 
-    let mut device = FaultInjector::new(device, seed);
+    let mut device = FaultInjector::new(device, seed, Instant::now);
     device.set_drop_chance(drop_chance);
     device.set_corrupt_chance(corrupt_chance);
     device.set_max_packet_size(size_limit);

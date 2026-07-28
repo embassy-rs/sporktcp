@@ -4,7 +4,7 @@ use std::os::unix::io::AsRawFd;
 
 use xarxa::iface::{Config, Interface, SocketSet};
 use xarxa::phy::wait as phy_wait;
-use xarxa::phy::{Device, Medium};
+use xarxa::phy::{Device, DriverMedium};
 use xarxa::socket::udp;
 use xarxa::time::Instant;
 use xarxa::wire::{EthernetAddress, IpAddress, IpCidr, Ipv6Address};
@@ -39,9 +39,9 @@ fn main() {
     // Create interface
     let ethernet_addr = EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x02]);
     let mut config = match device.capabilities().medium {
-        Medium::Ethernet => Config::new(ethernet_addr.into()),
-        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
-        Medium::Ieee802154 => todo!(),
+        DriverMedium::Ethernet => Config::new(ethernet_addr.into()),
+        DriverMedium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
+        medium => todo!("{medium:?}"),
     };
     config.random_seed = rand::random();
 

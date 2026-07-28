@@ -417,7 +417,7 @@ impl InterfaceInner {
 
             // Forward any NDISC packets to the ndisc packet handler
             #[cfg(any(feature = "medium-ethernet", feature = "medium-ieee802154"))]
-            Icmpv6Repr::Ndisc(repr) if ip_repr.hop_limit == 0xff => match self.caps.medium {
+            Icmpv6Repr::Ndisc(repr) if ip_repr.hop_limit == 0xff => match self.medium {
                 #[cfg(feature = "medium-ethernet")]
                 Medium::Ethernet => self.process_ndisc(ip_repr, repr),
                 #[cfg(feature = "medium-ieee802154")]
@@ -461,7 +461,7 @@ impl InterfaceInner {
             } => {
                 let ip_addr = ip_repr.src_addr.into();
                 if let Some(lladdr) = lladdr {
-                    let lladdr = check!(lladdr.parse(self.caps.medium));
+                    let lladdr = check!(lladdr.parse(self.medium));
                     if !lladdr.is_unicast() || !target_addr.x_is_unicast() {
                         return None;
                     }
@@ -479,7 +479,7 @@ impl InterfaceInner {
                 ..
             } => {
                 if let Some(lladdr) = lladdr {
-                    let lladdr = check!(lladdr.parse(self.caps.medium));
+                    let lladdr = check!(lladdr.parse(self.medium));
                     if !lladdr.is_unicast() || !target_addr.x_is_unicast() {
                         return None;
                     }
@@ -724,7 +724,7 @@ impl Interface {
             hop_limit: 255,
         };
         let packet = Packet::new_ipv6(ipv6_repr, IpPayload::Icmpv6(rs_repr));
-        let Some(tx_token) = device.transmit(self.inner.now) else {
+        let Some(tx_token) = device.transmit() else {
             return;
         };
         // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.

@@ -7,7 +7,7 @@ use crate::phy::PacketMeta;
 use crate::socket::PollAt;
 #[cfg(feature = "async")]
 use crate::socket::WakerRegistration;
-use crate::storage::{Empty, WithMeta};
+use crate::storage::{Empty, PacketHandle, WithMeta};
 use crate::wire::{IpAddress, IpEndpoint, IpListenEndpoint, IpProtocol, IpRepr, UdpRepr};
 
 /// Metadata for a sent or received UDP packet.
@@ -289,7 +289,7 @@ impl<'a> Socket<'a> {
 
     /// Return the packet send position.
     #[inline]
-    pub fn packet_send_position(&self) -> usize {
+    pub fn packet_send_position(&self) -> PacketHandle {
         self.tx_buffer.packet_position()
     }
 
@@ -307,8 +307,8 @@ impl<'a> Socket<'a> {
 
     /// Peek at unallocated packet metadata. This packet must not be in queue.
     #[inline]
-    pub fn packet_send_meta(&self, index: usize) -> Option<PacketMeta> {
-        self.tx_buffer.packet_metadata(index).map(|m| m.meta)
+    pub fn packet_send_meta(&self, handle: PacketHandle) -> Option<PacketMeta> {
+        self.tx_buffer.packet_metadata(handle).map(|m| m.meta)
     }
 
     #[cfg(all(feature = "packetmeta-id", feature = "packetmeta-timestamp"))]

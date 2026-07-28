@@ -42,6 +42,9 @@ pub trait WithMeta {
     fn meta_mut(&mut self) -> &mut crate::phy::PacketMeta;
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct PacketHandle(usize);
+
 /// An UDP packet ring buffer.
 #[derive(Debug)]
 pub struct PacketBuffer<'a, H: 'a> {
@@ -256,13 +259,13 @@ impl<'a, H> PacketBuffer<'a, H> {
     }
 
     /// Return the current packet position.
-    pub fn packet_position(&self) -> usize {
-        self.metadata_ring.pos()
+    pub fn packet_position(&self) -> PacketHandle {
+        PacketHandle(self.metadata_ring.pos())
     }
 
     /// Peek at unallocated packet metadata. This packet must not be in queue.
-    pub fn packet_metadata(&self, index: usize) -> Option<&H> {
-        if let Some(meta) = self.metadata_ring.get_unallocated_index(index) {
+    pub fn packet_metadata(&self, handle: PacketHandle) -> Option<&H> {
+        if let Some(meta) = self.metadata_ring.get_unallocated_index(handle.0) {
             meta.header.as_ref()
         } else {
             None

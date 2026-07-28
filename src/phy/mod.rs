@@ -139,7 +139,7 @@ pub const IPV4_FRAGMENT_PAYLOAD_ALIGNMENT: usize = 8;
 #[cfg(feature = "packetmeta-timestamp")]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Default)]
-struct Timestamp {
+pub struct Timestamp {
     pub seconds: u32,
     pub quarter_nanos: u32,
 }

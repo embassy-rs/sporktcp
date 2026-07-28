@@ -19,6 +19,8 @@ pub use xarxa_driver::{
     Checksum, ChecksumCapabilities, Device, DeviceCapabilities, PacketMeta, RxToken, Timestamp,
     TxToken,
 };
+#[cfg(feature = "packetmeta-timestamp")]
+pub use xarxa_driver::TxTimestamp;
 
 /// Type of medium of a driver, as reported in [`DeviceCapabilities::medium`].
 ///

@@ -218,6 +218,11 @@ impl<D: Device> Device for FaultInjector<D> {
         caps
     }
 
+    #[cfg(feature = "packetmeta-timestamp")]
+    fn poll_tx_timestamp(&mut self) -> Option<phy::TxTimestamp> {
+        self.inner.poll_tx_timestamp()
+    }
+
     fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         let (rx_token, tx_token) = self.inner.receive()?;
         let rx_meta = <D::RxToken<'_> as phy::RxToken>::meta(&rx_token);

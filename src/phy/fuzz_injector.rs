@@ -63,6 +63,11 @@ where
         caps
     }
 
+    #[cfg(feature = "packetmeta-timestamp")]
+    fn poll_tx_timestamp(&mut self) -> Option<phy::TxTimestamp> {
+        self.inner.poll_tx_timestamp()
+    }
+
     fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         self.inner.receive().map(|(rx_token, tx_token)| {
             let rx = RxToken {

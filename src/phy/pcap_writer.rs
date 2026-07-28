@@ -180,6 +180,11 @@ where
         self.lower.capabilities()
     }
 
+    #[cfg(feature = "packetmeta-timestamp")]
+    fn poll_tx_timestamp(&mut self) -> Option<phy::TxTimestamp> {
+        self.lower.poll_tx_timestamp()
+    }
+
     fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         let sink = &self.sink;
         let mode = self.mode;

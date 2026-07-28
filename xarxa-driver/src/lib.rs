@@ -34,14 +34,19 @@ pub enum Medium {
 
 /// A representation of a hardware packet timestamp.
 ///
-/// This is the time at which the network device saw the packet on the wire, as measured by
-/// the device's own clock. It is unrelated to the `Instant` the stack is polled with.
+/// This is a reading of the *device's own clock*, not of the `Instant` the stack is polled
+/// with. Such a clock is usually called a "PTP hardware clock" or PHC. It has an arbitrary
+/// epoch (often, but not necessarily, the time since the device was reset) and it drifts
+/// with respect to any other clock in the system unless something is actively disciplining
+/// it. Do not mix `Timestamp` and `Instant` values.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Default)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, Default)]
 pub struct Timestamp {
     /// Whole seconds.
     pub seconds: u32,
-    /// Fractional part, in quarters of a nanosecond.
+    /// Fraction of a second, in units of 0.25 nanoseconds.
+    ///
+    /// Always less than `4_000_000_000`, i.e. less than one whole second.
     pub quarter_nanos: u32,
 }
 
@@ -82,11 +87,51 @@ impl Timestamp {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Default)]
 #[non_exhaustive]
 pub struct PacketMeta {
-    /// An identifier associated with a transmitted or received packet.
+    /// An opaque identifier for this packet.
+    ///
+    /// On received packets, this is set by the [`Device`]. On packets to transmit,
+    /// this is set by the user and passed down to the [`Device`]; it is also what
+    /// correlates a transmit timestamp back to the packet that produced it, see
+    /// [`Device::poll_tx_timestamp`].
     #[cfg(feature = "packetmeta-id")]
     pub id: u32,
-    /// The time at which the device saw this packet on the wire.
+
+    /// The time at which this packet was received, as measured by the device.
+    ///
+    /// `None` if the device did not timestamp this packet. Devices commonly only
+    /// timestamp a subset of received packets, e.g. only PTP event messages.
+    ///
+    /// This field is only meaningful on received packets. It is ignored on packets
+    /// to transmit: at the time a packet is handed to the device, it has not been
+    /// transmitted yet, so its transmit timestamp does not exist yet. Use
+    /// [`Self::request_timestamp`] and [`Device::poll_tx_timestamp`] instead.
     #[cfg(feature = "packetmeta-timestamp")]
+    pub timestamp: Option<Timestamp>,
+
+    /// Request that the device timestamp this packet as it is transmitted.
+    ///
+    /// The resulting timestamp is reported back later, out of band, via
+    /// [`Device::poll_tx_timestamp`], tagged with this packet's [`Self::id`].
+    ///
+    /// This field is only meaningful on packets to transmit. It is ignored on
+    /// received packets.
+    ///
+    /// Timestamping is opt-in per packet because hardware typically has only a
+    /// handful of transmit timestamp slots. Requesting a timestamp for every packet
+    /// will cause most of them to be dropped.
+    #[cfg(feature = "packetmeta-timestamp")]
+    pub request_timestamp: bool,
+}
+
+/// The timestamp of a transmitted packet, reported by [`Device::poll_tx_timestamp`].
+#[cfg(feature = "packetmeta-timestamp")]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct TxTimestamp {
+    /// The [`PacketMeta::id`] of the packet this timestamp belongs to.
+    pub id: u32,
+
+    /// The time at which the packet was transmitted, as measured by the device.
     pub timestamp: Timestamp,
 }
 
@@ -283,6 +328,33 @@ pub trait Device {
 
     /// Get a description of device capabilities.
     fn capabilities(&self) -> DeviceCapabilities;
+
+    /// Poll for the timestamp of an already-transmitted packet.
+    ///
+    /// Returns the transmit timestamp of a packet previously sent with
+    /// [`PacketMeta::request_timestamp`] set, tagged with that packet's
+    /// [`PacketMeta::id`], or `None` if no timestamp is available right now.
+    ///
+    /// Transmit timestamps are reported out of band, rather than through
+    /// [`PacketMeta`] like receive timestamps are, because a packet's transmit
+    /// timestamp does not exist yet when [`TxToken::consume`] returns: the packet has
+    /// not gone out on the wire yet at that point.
+    ///
+    /// Callers must be robust against all of the following:
+    ///
+    /// * Timestamps become available an arbitrary time after [`TxToken::consume`]
+    ///   returned, so this should be polled repeatedly, not just once after sending.
+    /// * Timestamps may be reported out of order with respect to transmission.
+    /// * Timestamps may never arrive at all, e.g. because the hardware ran out of
+    ///   timestamp slots. Never block waiting for a particular `id` to show up
+    ///   without a timeout.
+    ///
+    /// Devices that do not support transmit timestamping always return `None`, which
+    /// is the default implementation.
+    #[cfg(feature = "packetmeta-timestamp")]
+    fn poll_tx_timestamp(&mut self) -> Option<TxTimestamp> {
+        None
+    }
 }
 
 impl<T: ?Sized + Device> Device for &mut T {
@@ -305,6 +377,11 @@ impl<T: ?Sized + Device> Device for &mut T {
 
     fn capabilities(&self) -> DeviceCapabilities {
         T::capabilities(self)
+    }
+
+    #[cfg(feature = "packetmeta-timestamp")]
+    fn poll_tx_timestamp(&mut self) -> Option<TxTimestamp> {
+        T::poll_tx_timestamp(self)
     }
 }
 

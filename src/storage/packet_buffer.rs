@@ -252,6 +252,15 @@ impl<'a, H> PacketBuffer<'a, H> {
         self.metadata_ring.pos()
     }
 
+    /// Peek at unallocated packet metadata. This packet must not be in queue.
+    pub fn packet_metadata(&self, index: usize) -> Option<&H> {
+        if let Some(meta) = self.metadata_ring.get_unallocated_index(index) {
+            meta.header.as_ref()
+        } else {
+            None
+        }
+    }
+
     /// Reset the packet buffer and clear any staged.
     #[allow(unused)]
     pub(crate) fn reset(&mut self) {

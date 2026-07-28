@@ -299,6 +299,12 @@ impl<'a> Socket<'a> {
         self.tx_buffer.payload_capacity()
     }
 
+    /// Peek at unallocated packet metadata. This packet must not be in queue.
+    #[inline]
+    pub fn packet_send_meta(&self, index: usize) -> Option<PacketMeta> {
+        self.tx_buffer.packet_metadata(index).map(|m| m.meta)
+    }
+
     /// Enqueue a packet to be sent to a given remote endpoint, and return a pointer
     /// to its payload.
     ///

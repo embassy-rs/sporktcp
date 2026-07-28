@@ -296,6 +296,31 @@ impl<'a, T: 'a> RingBuffer<'a, T> {
 /// This is the "random access" ring buffer interface: it operates with element slices,
 /// and allows to access elements of the buffer that are not adjacent to its head or tail.
 impl<'a, T: 'a> RingBuffer<'a, T> {
+    /// Return the given index if it's unallocated, otherwise `None`
+    #[must_use]
+    pub fn get_unallocated_index(&self, index: usize) -> Option<&T> {
+        let start = self.read_at;
+        let end = self.get_idx_unchecked(self.length);
+
+        if self.length == self.capacity() {
+            return None; // Entire buffer is allocated
+        }
+
+        let is_unallocated = if end >= start {
+            // Allocated region is contiguous: [start, end)
+            index < start || index >= end
+        } else {
+            // Allocated region wraps around: [start, cap) and [0, end)
+            index >= end && index < start
+        };
+
+        if is_unallocated {
+            Some(&self.storage[index])
+        } else {
+            None
+        }
+    }
+
     /// Return the largest contiguous slice of unallocated buffer elements starting
     /// at the given offset past the last allocated element, and up to the given size.
     #[must_use]

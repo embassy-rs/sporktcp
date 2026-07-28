@@ -127,7 +127,7 @@ impl<'a, Tx: phy::TxToken, FTx: Fuzzer> phy::TxToken for TxToken<'a, Tx, FTx> {
         })
     }
 
-    fn set_meta(&mut self, meta: phy::PacketMeta) {
-        self.token.set_meta(meta)
+    fn meta(&self) -> phy::PacketMeta {
+        self.token.meta()
     }
 }

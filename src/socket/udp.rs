@@ -534,7 +534,7 @@ impl<'a> Socket<'a> {
 
     pub(crate) fn dispatch<F, E>(&mut self, cx: &mut Context, emit: F) -> Result<(), E>
     where
-        F: FnOnce(&mut Context, PacketMeta, (IpRepr, UdpRepr, &[u8])) -> Result<(), E>,
+        F: FnOnce(&mut Context, &mut PacketMeta, (IpRepr, UdpRepr, &[u8])) -> Result<(), E>,
     {
         let endpoint = self.endpoint;
         let hop_limit = self.hop_limit.unwrap_or(64);
@@ -578,7 +578,7 @@ impl<'a> Socket<'a> {
                 hop_limit,
             );
 
-            emit(cx, packet_meta.meta, (ip_repr, repr, payload_buf))
+            emit(cx, &mut packet_meta.meta, (ip_repr, repr, payload_buf))
         });
         match res {
             Err(Empty) => Ok(()),

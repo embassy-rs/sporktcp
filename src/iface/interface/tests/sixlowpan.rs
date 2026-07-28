@@ -226,7 +226,7 @@ fn test_echo_request_sixlowpan_128_bytes() {
     iface.inner.dispatch_ieee802154(
         Ieee802154Address::default(),
         tx_token,
-        PacketMeta::default(),
+        &mut PacketMeta::default(),
         result.unwrap(),
         &mut iface.fragmenter,
     );
@@ -375,7 +375,7 @@ In at rhoncus tortor. Cras blandit tellus diam, varius vestibulum nibh commodo n
     iface.inner.dispatch_ieee802154(
         Ieee802154Address::default(),
         tx_token,
-        PacketMeta::default(),
+        &mut PacketMeta::default(),
         Packet::new_ipv6(
             Ipv6Repr {
                 src_addr: Ipv6Address::UNSPECIFIED,

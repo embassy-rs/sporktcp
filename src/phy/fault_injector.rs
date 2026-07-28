@@ -326,7 +326,7 @@ impl<'a, Tx: phy::TxToken> phy::TxToken for TxToken<'a, Tx> {
         })
     }
 
-    fn set_meta(&mut self, meta: PacketMeta) {
-        self.token.set_meta(meta);
+    fn meta(&self) -> phy::PacketMeta {
+        self.token.meta()
     }
 }

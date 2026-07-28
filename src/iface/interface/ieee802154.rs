@@ -50,7 +50,7 @@ impl InterfaceInner {
         &mut self,
         ll_dst_a: Ieee802154Address,
         tx_token: Tx,
-        meta: PacketMeta,
+        meta: &mut PacketMeta,
         packet: Packet,
         frag: &mut Fragmenter,
     ) {

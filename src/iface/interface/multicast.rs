@@ -202,7 +202,12 @@ impl Interface {
 
                         // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.
                         self.inner
-                            .dispatch_ip(tx_token, PacketMeta::default(), pkt, &mut self.fragmenter)
+                            .dispatch_ip(
+                                tx_token,
+                                &mut PacketMeta::default(),
+                                pkt,
+                                &mut self.fragmenter,
+                            )
                             .unwrap();
                     }
                 }
@@ -218,7 +223,12 @@ impl Interface {
 
                         // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.
                         self.inner
-                            .dispatch_ip(tx_token, PacketMeta::default(), pkt, &mut self.fragmenter)
+                            .dispatch_ip(
+                                tx_token,
+                                &mut PacketMeta::default(),
+                                pkt,
+                                &mut self.fragmenter,
+                            )
                             .unwrap();
                     }
                 }
@@ -250,7 +260,12 @@ impl Interface {
 
                         // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.
                         self.inner
-                            .dispatch_ip(tx_token, PacketMeta::default(), pkt, &mut self.fragmenter)
+                            .dispatch_ip(
+                                tx_token,
+                                &mut PacketMeta::default(),
+                                pkt,
+                                &mut self.fragmenter,
+                            )
                             .unwrap();
                     }
                 }
@@ -266,7 +281,12 @@ impl Interface {
 
                         // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.
                         self.inner
-                            .dispatch_ip(tx_token, PacketMeta::default(), pkt, &mut self.fragmenter)
+                            .dispatch_ip(
+                                tx_token,
+                                &mut PacketMeta::default(),
+                                pkt,
+                                &mut self.fragmenter,
+                            )
                             .unwrap();
                     }
                 }
@@ -287,7 +307,12 @@ impl Interface {
                     if let Some(tx_token) = device.transmit(self.inner.now) {
                         // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.
                         self.inner
-                            .dispatch_ip(tx_token, PacketMeta::default(), pkt, &mut self.fragmenter)
+                            .dispatch_ip(
+                                tx_token,
+                                &mut PacketMeta::default(),
+                                pkt,
+                                &mut self.fragmenter,
+                            )
                             .unwrap();
                         self.inner.multicast.igmp_report_state = IgmpReportState::Inactive;
                     }
@@ -320,7 +345,7 @@ impl Interface {
                                 self.inner
                                     .dispatch_ip(
                                         tx_token,
-                                        PacketMeta::default(),
+                                        &mut PacketMeta::default(),
                                         pkt,
                                         &mut self.fragmenter,
                                     )
@@ -365,7 +390,12 @@ impl Interface {
                     && let Some(tx_token) = device.transmit(self.inner.now)
                 {
                     self.inner
-                        .dispatch_ip(tx_token, PacketMeta::default(), pkt, &mut self.fragmenter)
+                        .dispatch_ip(
+                            tx_token,
+                            &mut PacketMeta::default(),
+                            pkt,
+                            &mut self.fragmenter,
+                        )
                         .unwrap();
                 };
                 self.inner.multicast.mld_report_state = MldReportState::Inactive;
@@ -377,7 +407,12 @@ impl Interface {
                 {
                     // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.
                     self.inner
-                        .dispatch_ip(tx_token, PacketMeta::default(), pkt, &mut self.fragmenter)
+                        .dispatch_ip(
+                            tx_token,
+                            &mut PacketMeta::default(),
+                            pkt,
+                            &mut self.fragmenter,
+                        )
                         .unwrap();
                 }
                 self.inner.multicast.mld_report_state = MldReportState::Inactive;

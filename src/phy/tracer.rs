@@ -143,8 +143,8 @@ impl<Tx: phy::TxToken> phy::TxToken for TxToken<Tx> {
         })
     }
 
-    fn set_meta(&mut self, meta: phy::PacketMeta) {
-        self.token.set_meta(meta)
+    fn meta(&self) -> phy::PacketMeta {
+        self.token.meta()
     }
 }
 

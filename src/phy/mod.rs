@@ -415,7 +415,8 @@ pub trait TxToken {
     where
         F: FnOnce(&mut [u8]) -> R;
 
-    /// The Packet ID to be associated with the frame to be transmitted by this [`TxToken`].
-    #[allow(unused_variables)]
-    fn set_meta(&mut self, meta: PacketMeta) {}
+    /// The Packet ID associated with the frame received by this [`TxToken`]
+    fn meta(&self) -> PacketMeta {
+        PacketMeta::default()
+    }
 }

@@ -731,7 +731,7 @@ impl Interface {
         self.inner
             .dispatch_ip(
                 tx_token,
-                PacketMeta::default(),
+                &mut PacketMeta::default(),
                 packet,
                 &mut self.fragmenter,
             )

@@ -870,7 +870,7 @@ fn test_packet_len(#[case] medium: Medium) {
                 TestTxToken {
                     max_transmission_unit: iface.inner.caps.max_transmission_unit
                 },
-                PacketMeta::default(),
+                &mut PacketMeta::default(),
                 ip_packet,
                 &mut iface.fragmenter,
             ),
@@ -1210,14 +1210,14 @@ fn test_raw_socket_tx_fragmentation(#[case] medium: Medium) {
             if packet_size > mtu && medium == Medium::Ip {
                 iface.inner.dispatch_ip(
                     TestFragmentTxToken {},
-                    PacketMeta::default(),
+                    &mut PacketMeta::default(),
                     packet,
                     &mut iface.fragmenter,
                 )
             } else {
                 iface.inner.dispatch_ip(
                     MockTxToken {},
-                    PacketMeta::default(),
+                    &mut PacketMeta::default(),
                     packet,
                     &mut iface.fragmenter,
                 )

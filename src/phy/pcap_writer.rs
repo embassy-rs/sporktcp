@@ -260,7 +260,7 @@ impl<'a, Tx: phy::TxToken, S: PcapSink> phy::TxToken for TxToken<'a, Tx, S> {
         })
     }
 
-    fn set_meta(&mut self, meta: phy::PacketMeta) {
-        self.token.set_meta(meta)
+    fn meta(&self) -> phy::PacketMeta {
+        self.token.meta()
     }
 }

@@ -281,6 +281,12 @@ impl<'a> Socket<'a> {
         self.tx_buffer.packet_capacity()
     }
 
+    /// Return the packet send position.
+    #[inline]
+    pub fn packet_send_position(&self) -> usize {
+        self.tx_buffer.packet_position()
+    }
+
     /// Return the maximum number of bytes inside the recv buffer.
     #[inline]
     pub fn payload_recv_capacity(&self) -> usize {

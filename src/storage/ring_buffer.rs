@@ -72,6 +72,11 @@ impl<'a, T: 'a> RingBuffer<'a, T> {
         self.length
     }
 
+    /// Return the current position.
+    pub fn pos(&self) -> usize {
+        self.get_idx_unchecked(self.length)
+    }
+
     /// Return the number of elements that can be added to the ring buffer.
     pub fn window(&self) -> usize {
         self.capacity() - self.len()

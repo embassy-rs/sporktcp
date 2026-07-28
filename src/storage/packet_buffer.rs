@@ -247,6 +247,11 @@ impl<'a, H> PacketBuffer<'a, H> {
         self.payload_ring.len()
     }
 
+    /// Return the current packet position.
+    pub fn packet_position(&self) -> usize {
+        self.metadata_ring.pos()
+    }
+
     /// Reset the packet buffer and clear any staged.
     #[allow(unused)]
     pub(crate) fn reset(&mut self) {

@@ -10,7 +10,7 @@ mod packet_buffer;
 mod ring_buffer;
 
 pub use self::assembler::Assembler;
-pub use self::packet_buffer::{PacketBuffer, PacketHandle, PacketMetadata, WithMeta};
+pub use self::packet_buffer::{PacketBuffer, PacketHandle, PacketMetadata};
 pub use self::ring_buffer::RingBuffer;
 
 /// A trait for setting a value to a known state.

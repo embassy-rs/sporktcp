@@ -7,7 +7,7 @@ use crate::phy::PacketMeta;
 use crate::socket::PollAt;
 #[cfg(feature = "async")]
 use crate::socket::WakerRegistration;
-use crate::storage::{Empty, PacketHandle, WithMeta};
+use crate::storage::{Empty, PacketHandle};
 use crate::wire::{IpAddress, IpEndpoint, IpListenEndpoint, IpProtocol, IpRepr, UdpRepr};
 
 /// Metadata for a sent or received UDP packet.
@@ -33,12 +33,6 @@ impl<T: Into<IpEndpoint>> From<T> for UdpMetadata {
             local_address: None,
             meta: PacketMeta::default(),
         }
-    }
-}
-
-impl WithMeta for UdpMetadata {
-    fn meta_mut(&mut self) -> &mut crate::phy::PacketMeta {
-        &mut self.meta
     }
 }
 
@@ -314,7 +308,8 @@ impl<'a> Socket<'a> {
     #[cfg(all(feature = "packetmeta-id", feature = "packetmeta-timestamp"))]
     #[inline]
     pub(crate) fn update_packet_send_meta(&mut self, meta: PacketMeta) {
-        self.tx_buffer.update_packet_meta(meta);
+        self.tx_buffer
+            .update_packet_meta(meta, |meta| &mut meta.meta);
         #[cfg(feature = "async")]
         self.tx_waker.wake();
     }

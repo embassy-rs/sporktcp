@@ -38,10 +38,6 @@ impl<H> PacketMetadata<H> {
     }
 }
 
-pub trait WithMeta {
-    fn meta_mut(&mut self) -> &mut crate::phy::PacketMeta;
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct PacketHandle(usize);
 
@@ -274,10 +270,11 @@ impl<'a, H> PacketBuffer<'a, H> {
 
     #[cfg(all(feature = "packetmeta-id", feature = "packetmeta-timestamp"))]
     /// Update unallocated packet metadata. This packet must not be in queue.
-    pub fn update_packet_meta(&mut self, meta: crate::phy::PacketMeta)
-    where
-        H: WithMeta,
-    {
+    pub fn update_packet_meta(
+        &mut self,
+        meta: crate::phy::PacketMeta,
+        f: impl Fn(&mut H) -> &mut crate::phy::PacketMeta,
+    ) {
         let capacity = self.metadata_ring.capacity();
 
         let header = loop {
@@ -289,7 +286,7 @@ impl<'a, H> PacketBuffer<'a, H> {
             };
 
             if let Some(header) = meta.header.as_mut() {
-                break header.meta_mut();
+                break f(header);
             }
 
             self.metadata_pos += (self.metadata_pos + 1) % capacity;

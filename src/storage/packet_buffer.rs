@@ -38,11 +38,17 @@ impl<H> PacketMetadata<H> {
     }
 }
 
+pub trait WithMeta {
+    fn meta_mut(&mut self) -> &mut crate::phy::PacketMeta;
+}
+
 /// An UDP packet ring buffer.
 #[derive(Debug)]
 pub struct PacketBuffer<'a, H: 'a> {
     metadata_ring: RingBuffer<'a, PacketMetadata<H>>,
     payload_ring: RingBuffer<'a, u8>,
+    #[cfg(all(feature = "packetmeta-id", feature = "packetmeta-timestamp"))]
+    metadata_pos: usize,
 }
 
 impl<'a, H> PacketBuffer<'a, H> {
@@ -58,6 +64,8 @@ impl<'a, H> PacketBuffer<'a, H> {
         PacketBuffer {
             metadata_ring: RingBuffer::new(metadata_storage),
             payload_ring: RingBuffer::new(payload_storage),
+            #[cfg(all(feature = "packetmeta-id", feature = "packetmeta-timestamp"))]
+            metadata_pos: 0,
         }
     }
 
@@ -259,6 +267,37 @@ impl<'a, H> PacketBuffer<'a, H> {
         } else {
             None
         }
+    }
+
+    #[cfg(all(feature = "packetmeta-id", feature = "packetmeta-timestamp"))]
+    /// Update unallocated packet metadata. This packet must not be in queue.
+    pub fn update_packet_meta(&mut self, meta: crate::phy::PacketMeta)
+    where
+        H: WithMeta,
+    {
+        let capacity = self.metadata_ring.capacity();
+
+        let header = loop {
+            let Some(meta) = self
+                .metadata_ring
+                .update_unallocated_index(self.metadata_pos)
+            else {
+                return;
+            };
+
+            if let Some(header) = meta.header.as_mut() {
+                break header.meta_mut();
+            }
+
+            self.metadata_pos += (self.metadata_pos + 1) % capacity;
+        };
+
+        if header.id != meta.id {
+            return;
+        }
+
+        header.timestamp = meta.timestamp;
+        self.metadata_pos += (self.metadata_pos + 1) % capacity;
     }
 
     /// Reset the packet buffer and clear any staged.

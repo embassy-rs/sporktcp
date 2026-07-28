@@ -446,6 +446,20 @@ impl Interface {
         self.fragments.reassembly_timeout = timeout;
     }
 
+    #[cfg(all(feature = "packetmeta-id", feature = "packetmeta-timestamp"))]
+    /// Update PacketMeta
+    pub fn update_packet_send_meta(&mut self, sockets: &mut SocketSet<'_>, meta: PacketMeta) {
+        for item in sockets.items_mut() {
+            match &mut item.socket {
+                #[cfg(feature = "socket-udp")]
+                Socket::Udp(socket) => {
+                    socket.update_packet_send_meta(meta);
+                }
+                _ => {}
+            }
+        }
+    }
+
     /// Transmit packets queued in the sockets, and receive packets queued
     /// in the device.
     ///

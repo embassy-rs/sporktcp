@@ -415,6 +415,8 @@ pub trait TxToken {
     where
         F: FnOnce(&mut [u8]) -> R;
 
+    fn request_timestamp(&mut self) {}
+
     /// The Packet ID associated with the frame received by this [`TxToken`]
     fn meta(&self) -> PacketMeta {
         PacketMeta::default()

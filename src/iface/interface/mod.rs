@@ -1247,7 +1247,8 @@ impl InterfaceInner {
 
         // If the medium is Ethernet, then we need to retrieve the destination hardware address.
         #[cfg(feature = "medium-ethernet")]
-        let (dst_hardware_addr, tx_token) = match self.caps.medium {
+        #[allow(unused_mut)]
+        let (dst_hardware_addr, mut tx_token) = match self.caps.medium {
             Medium::Ethernet => {
                 match self.lookup_hardware_addr(tx_token, &ip_repr.dst_addr(), frag)? {
                     (HardwareAddress::Ethernet(addr), tx_token) => (addr, tx_token),
@@ -1372,6 +1373,10 @@ impl InterfaceInner {
                         Ok(())
                     }
                 } else {
+                    #[cfg(feature = "packetmeta-id")]
+                    if meta.id == u32::MAX {
+                        tx_token.request_timestamp();
+                    }
                     *meta = tx_token.meta();
 
                     // No fragmentation is required.

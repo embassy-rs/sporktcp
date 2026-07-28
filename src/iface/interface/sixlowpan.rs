@@ -292,7 +292,7 @@ impl InterfaceInner {
 
     pub(super) fn dispatch_sixlowpan<Tx: TxToken>(
         &mut self,
-        tx_token: Tx,
+        #[allow(unused_mut)] mut tx_token: Tx,
         meta: &mut PacketMeta,
         packet: Packet,
         ieee_repr: Ieee802154Repr,
@@ -381,6 +381,11 @@ impl InterfaceInner {
                 pkt.sent_bytes = frag1_size;
                 pkt.sixlowpan.datagram_offset = frag1_size + header_diff;
 
+                #[cfg(feature = "packetmeta-id")]
+                if meta.id == u32::MAX {
+                    tx_token.request_timestamp();
+                }
+
                 *meta = tx_token.meta();
                 tx_token.consume(ieee_len + frag1.buffer_len() + frag1_size, |mut tx_buf| {
                     // Add the IEEE header.
@@ -406,6 +411,11 @@ impl InterfaceInner {
                 return;
             }
         } else {
+            #[cfg(feature = "packetmeta-id")]
+            if meta.id == u32::MAX {
+                tx_token.request_timestamp();
+            }
+
             *meta = tx_token.meta();
 
             // We don't need fragmentation, so we emit everything to the TX token.

@@ -4,13 +4,12 @@ use std::os::unix::io::{AsRawFd, RawFd};
 use std::rc::Rc;
 use std::vec::Vec;
 
-use crate::phy::{self, Device, DeviceCapabilities, Medium, sys};
-use crate::time::Instant;
+use crate::phy::{self, Device, DeviceCapabilities, DriverMedium, sys};
 
 /// A socket that captures or transmits the complete frame.
 #[derive(Debug)]
 pub struct RawSocket {
-    medium: Medium,
+    medium: DriverMedium,
     lower: Rc<RefCell<sys::RawSocketDesc>>,
     mtu: usize,
 }
@@ -26,14 +25,14 @@ impl RawSocket {
     ///
     /// This requires superuser privileges or a corresponding capability bit
     /// set on the executable.
-    pub fn new(name: &str, medium: Medium) -> io::Result<RawSocket> {
+    pub fn new(name: &str, medium: DriverMedium) -> io::Result<RawSocket> {
         let mut lower = sys::RawSocketDesc::new(name, medium)?;
         lower.bind_interface()?;
 
         let mut mtu = lower.interface_mtu()?;
 
         #[cfg(feature = "medium-ieee802154")]
-        if medium == Medium::Ieee802154 {
+        if medium == DriverMedium::Ieee802154 {
             // SIOCGIFMTU returns 127 - (ACK_PSDU - FCS - 1) - FCS.
             //                    127 - (5 - 2 - 1) - 2 = 123
             // For IEEE802154, we want to add (ACK_PSDU - FCS - 1), since that is what SIOCGIFMTU
@@ -44,7 +43,7 @@ impl RawSocket {
         }
 
         #[cfg(feature = "medium-ethernet")]
-        if medium == Medium::Ethernet {
+        if medium == DriverMedium::Ethernet {
             // SIOCGIFMTU returns the IP MTU (typically 1500 bytes.)
             // xarxa counts the entire Ethernet packet in the MTU, so add the Ethernet header size to it.
             mtu += crate::wire::EthernetFrame::<&[u8]>::header_len()
@@ -69,14 +68,13 @@ impl Device for RawSocket {
         Self: 'a;
 
     fn capabilities(&self) -> DeviceCapabilities {
-        DeviceCapabilities {
-            max_transmission_unit: self.mtu,
-            medium: self.medium,
-            ..DeviceCapabilities::default()
-        }
+        let mut caps = DeviceCapabilities::default();
+        caps.max_transmission_unit = self.mtu;
+        caps.medium = self.medium;
+        caps
     }
 
-    fn receive(&mut self, _timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+    fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         let mut lower = self.lower.borrow_mut();
         let mut buffer = vec![0; self.mtu];
         match lower.recv(&mut buffer[..]) {
@@ -93,7 +91,7 @@ impl Device for RawSocket {
         }
     }
 
-    fn transmit(&mut self, _timestamp: Instant) -> Option<Self::TxToken<'_>> {
+    fn transmit(&mut self) -> Option<Self::TxToken<'_>> {
         Some(TxToken {
             lower: self.lower.clone(),
         })

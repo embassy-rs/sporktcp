@@ -97,12 +97,16 @@ pub struct FaultInjector<D: Device> {
     inner: D,
     state: State,
     config: Config,
+    clock: fn() -> Instant,
     rx_buf: [u8; MTU],
 }
 
 impl<D: Device> FaultInjector<D> {
     /// Create a fault injector device, using the given random number generator seed.
-    pub fn new(inner: D, seed: u32) -> FaultInjector<D> {
+    ///
+    /// `clock` is only used for rate limiting, see [`Self::set_max_tx_rate`] and
+    /// [`Self::set_max_rx_rate`]. Under `std`, [`Instant::now`] is a suitable value.
+    pub fn new(inner: D, seed: u32, clock: fn() -> Instant) -> FaultInjector<D> {
         FaultInjector {
             inner,
             state: State {
@@ -112,6 +116,7 @@ impl<D: Device> FaultInjector<D> {
                 rx_bucket: 0,
             },
             config: Config::default(),
+            clock,
             rx_buf: [0u8; MTU],
         }
     }
@@ -213,8 +218,8 @@ impl<D: Device> Device for FaultInjector<D> {
         caps
     }
 
-    fn receive(&mut self, timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
-        let (rx_token, tx_token) = self.inner.receive(timestamp)?;
+    fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+        let (rx_token, tx_token) = self.inner.receive()?;
         let rx_meta = <D::RxToken<'_> as phy::RxToken>::meta(&rx_token);
 
         let len = super::RxToken::consume(rx_token, |buffer| {
@@ -235,7 +240,7 @@ impl<D: Device> Device for FaultInjector<D> {
             return None;
         }
 
-        if !self.state.maybe_receive(&self.config, timestamp) {
+        if !self.state.maybe_receive(&self.config, (self.clock)()) {
             net_trace!("rx: dropping a packet because of rate limiting");
             return None;
         }
@@ -251,18 +256,19 @@ impl<D: Device> Device for FaultInjector<D> {
             config: self.config,
             token: tx_token,
             junk: [0; MTU],
-            timestamp,
+            clock: self.clock,
         };
         Some((rx, tx))
     }
 
-    fn transmit(&mut self, timestamp: Instant) -> Option<Self::TxToken<'_>> {
-        self.inner.transmit(timestamp).map(|token| TxToken {
+    fn transmit(&mut self) -> Option<Self::TxToken<'_>> {
+        let clock = self.clock;
+        self.inner.transmit().map(|token| TxToken {
             state: &mut self.state,
             config: self.config,
             token,
             junk: [0; MTU],
-            timestamp,
+            clock,
         })
     }
 }
@@ -292,7 +298,7 @@ pub struct TxToken<'a, Tx: phy::TxToken> {
     config: Config,
     token: Tx,
     junk: [u8; MTU],
-    timestamp: Instant,
+    clock: fn() -> Instant,
 }
 
 impl<'a, Tx: phy::TxToken> phy::TxToken for TxToken<'a, Tx> {
@@ -306,7 +312,7 @@ impl<'a, Tx: phy::TxToken> phy::TxToken for TxToken<'a, Tx> {
         } else if self.config.max_size > 0 && len > self.config.max_size {
             net_trace!("tx: dropping a packet that is too large");
             true
-        } else if !self.state.maybe_transmit(&self.config, self.timestamp) {
+        } else if !self.state.maybe_transmit(&self.config, (self.clock)()) {
             net_trace!("tx: dropping a packet because of rate limiting");
             true
         } else {

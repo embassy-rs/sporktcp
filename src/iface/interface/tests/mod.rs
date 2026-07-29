@@ -54,7 +54,7 @@ impl TxToken for MockTxToken {
 #[should_panic(expected = "The hardware address does not match the medium of the interface.")]
 #[cfg(all(feature = "medium-ip", feature = "medium-ethernet", feature = "alloc"))]
 fn test_new_panic() {
-    let mut device = Loopback::new(Medium::Ethernet);
+    let mut device = Loopback::new(Medium::Ethernet.to_driver());
     let config = Config::new(HardwareAddress::Ip);
     Interface::new(config, &mut device, Instant::ZERO);
 }

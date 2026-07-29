@@ -19,7 +19,7 @@ impl Interface {
 
         let pkt = &self.fragmenter;
         if pkt.packet_len > pkt.sent_bytes
-            && let Some(tx_token) = device.transmit(self.inner.now)
+            && let Some(tx_token) = device.transmit()
         {
             self.inner
                 .dispatch_ipv4_frag(tx_token, &mut self.fragmenter);
@@ -156,9 +156,7 @@ impl InterfaceInner {
         {
             use crate::socket::dhcpv4::Socket as Dhcpv4Socket;
 
-            if ipv4_repr.next_header == IpProtocol::Udp
-                && matches!(self.caps.medium, Medium::Ethernet)
-            {
+            if ipv4_repr.next_header == IpProtocol::Udp && matches!(self.medium, Medium::Ethernet) {
                 let udp_packet = check!(UdpPacket::new_checked(ip_payload));
                 if let Some(dhcp_socket) = sockets
                     .items_mut()
@@ -421,7 +419,7 @@ impl InterfaceInner {
     pub(super) fn dispatch_ipv4_frag<Tx: TxToken>(&mut self, tx_token: Tx, frag: &mut Fragmenter) {
         let caps = self.caps.clone();
 
-        let max_fragment_size = caps.max_ipv4_fragment_size(frag.ipv4.repr.buffer_len());
+        let max_fragment_size = self.max_ipv4_fragment_size(frag.ipv4.repr.buffer_len());
         let payload_len = (frag.packet_len - frag.sent_bytes).min(max_fragment_size);
         let ip_len = payload_len + frag.ipv4.repr.buffer_len();
 
@@ -431,7 +429,7 @@ impl InterfaceInner {
 
         let mut tx_len = ip_len;
         #[cfg(feature = "medium-ethernet")]
-        if matches!(caps.medium, Medium::Ethernet) {
+        if matches!(self.medium, Medium::Ethernet) {
             tx_len += EthernetFrame::<&[u8]>::header_len();
         }
 
@@ -454,7 +452,7 @@ impl InterfaceInner {
 
         tx_token.consume(tx_len, |mut tx_buffer| {
             #[cfg(feature = "medium-ethernet")]
-            if matches!(self.caps.medium, Medium::Ethernet) {
+            if matches!(self.medium, Medium::Ethernet) {
                 emit_ethernet(&IpRepr::Ipv4(frag.ipv4.repr), tx_buffer);
                 tx_buffer = &mut tx_buffer[EthernetFrame::<&[u8]>::header_len()..];
             }

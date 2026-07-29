@@ -196,7 +196,7 @@ impl Interface {
                 #[cfg(feature = "proto-ipv4")]
                 IpAddress::Ipv4(addr) => {
                     if let Some(pkt) = self.inner.igmp_report_packet(IgmpVersion::Version2, addr) {
-                        let Some(tx_token) = device.transmit(self.inner.now) else {
+                        let Some(tx_token) = device.transmit() else {
                             break;
                         };
 
@@ -212,7 +212,7 @@ impl Interface {
                         MldRecordType::ChangeToInclude,
                         addr,
                     )]) {
-                        let Some(tx_token) = device.transmit(self.inner.now) else {
+                        let Some(tx_token) = device.transmit() else {
                             break;
                         };
 
@@ -244,7 +244,7 @@ impl Interface {
                 #[cfg(feature = "proto-ipv4")]
                 IpAddress::Ipv4(addr) => {
                     if let Some(pkt) = self.inner.igmp_leave_packet(addr) {
-                        let Some(tx_token) = device.transmit(self.inner.now) else {
+                        let Some(tx_token) = device.transmit() else {
                             break;
                         };
 
@@ -260,7 +260,7 @@ impl Interface {
                         MldRecordType::ChangeToExclude,
                         addr,
                     )]) {
-                        let Some(tx_token) = device.transmit(self.inner.now) else {
+                        let Some(tx_token) = device.transmit() else {
                             break;
                         };
 
@@ -284,7 +284,7 @@ impl Interface {
             } if self.inner.now >= timeout => {
                 if let Some(pkt) = self.inner.igmp_report_packet(version, group) {
                     // Send initial membership report
-                    if let Some(tx_token) = device.transmit(self.inner.now) {
+                    if let Some(tx_token) = device.transmit() {
                         // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.
                         self.inner
                             .dispatch_ip(tx_token, PacketMeta::default(), pkt, &mut self.fragmenter)
@@ -315,7 +315,7 @@ impl Interface {
                     Some(addr) => {
                         if let Some(pkt) = self.inner.igmp_report_packet(version, addr) {
                             // Send initial membership report
-                            if let Some(tx_token) = device.transmit(self.inner.now) {
+                            if let Some(tx_token) = device.transmit() {
                                 // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.
                                 self.inner
                                     .dispatch_ip(
@@ -362,7 +362,7 @@ impl Interface {
                     })
                     .collect::<heapless::Vec<_, IFACE_MAX_MULTICAST_GROUP_COUNT>>();
                 if let Some(pkt) = self.inner.mldv2_report_packet(&records)
-                    && let Some(tx_token) = device.transmit(self.inner.now)
+                    && let Some(tx_token) = device.transmit()
                 {
                     self.inner
                         .dispatch_ip(tx_token, PacketMeta::default(), pkt, &mut self.fragmenter)
@@ -373,7 +373,7 @@ impl Interface {
             MldReportState::ToSpecificQuery { group, timeout } if self.inner.now >= timeout => {
                 let record = MldAddressRecordRepr::new(MldRecordType::ModeIsExclude, group);
                 if let Some(pkt) = self.inner.mldv2_report_packet(&[record])
-                    && let Some(tx_token) = device.transmit(self.inner.now)
+                    && let Some(tx_token) = device.transmit()
                 {
                     // NOTE(unwrap): packet destination is multicast, which is always routable and doesn't require neighbor discovery.
                     self.inner

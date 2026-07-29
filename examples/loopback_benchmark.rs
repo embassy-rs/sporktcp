@@ -3,13 +3,13 @@ mod utils;
 use log::debug;
 
 use xarxa::iface::{Config, Interface, SocketSet};
-use xarxa::phy::{Device, Loopback, Medium};
+use xarxa::phy::{Device, DriverMedium, Loopback};
 use xarxa::socket::tcp;
 use xarxa::time::Instant;
 use xarxa::wire::{EthernetAddress, IpAddress, IpCidr};
 
 fn main() {
-    let device = Loopback::new(Medium::Ethernet);
+    let device = Loopback::new(DriverMedium::Ethernet);
 
     let mut device = {
         utils::setup_logging("info");
@@ -23,11 +23,11 @@ fn main() {
 
     // Create interface
     let config = match device.capabilities().medium {
-        Medium::Ethernet => {
+        DriverMedium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
-        Medium::Ieee802154 => todo!(),
+        DriverMedium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
+        medium => todo!("{medium:?}"),
     };
 
     let mut iface = Interface::new(config, &mut device, Instant::now());

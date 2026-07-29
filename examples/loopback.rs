@@ -9,7 +9,7 @@ use core::str;
 use log::{debug, error, info};
 
 use xarxa::iface::{Config, Interface, SocketSet};
-use xarxa::phy::{Device, Loopback, Medium};
+use xarxa::phy::{Device, DriverMedium, Loopback};
 use xarxa::socket::tcp;
 use xarxa::time::{Duration, Instant};
 use xarxa::wire::{EthernetAddress, IpAddress, IpCidr};
@@ -65,7 +65,7 @@ mod mock {
 
 fn main() {
     let clock = mock::Clock::new();
-    let device = Loopback::new(Medium::Ethernet);
+    let device = Loopback::new(DriverMedium::Ethernet);
 
     #[cfg(feature = "std")]
     let mut device = {
@@ -81,11 +81,11 @@ fn main() {
 
     // Create interface
     let mut config = match device.capabilities().medium {
-        Medium::Ethernet => {
+        DriverMedium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
-        Medium::Ieee802154 => todo!(),
+        DriverMedium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
+        medium => todo!("{medium:?}"),
     };
 
     let mut iface = Interface::new(config, &mut device, Instant::now());

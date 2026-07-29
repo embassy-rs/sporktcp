@@ -1,5 +1,5 @@
 use super::*;
-use crate::phy::Medium;
+use crate::phy::DriverMedium;
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::{io, mem};
 
@@ -17,14 +17,15 @@ impl AsRawFd for RawSocketDesc {
 }
 
 impl RawSocketDesc {
-    pub fn new(name: &str, medium: Medium) -> io::Result<RawSocketDesc> {
+    pub fn new(name: &str, medium: DriverMedium) -> io::Result<RawSocketDesc> {
         let protocol = match medium {
             #[cfg(feature = "medium-ethernet")]
-            Medium::Ethernet => imp::ETH_P_ALL,
+            DriverMedium::Ethernet => imp::ETH_P_ALL,
             #[cfg(feature = "medium-ip")]
-            Medium::Ip => imp::ETH_P_ALL,
+            DriverMedium::Ip => imp::ETH_P_ALL,
             #[cfg(feature = "medium-ieee802154")]
-            Medium::Ieee802154 => imp::ETH_P_IEEE802154,
+            DriverMedium::Ieee802154 => imp::ETH_P_IEEE802154,
+            medium => panic!("unsupported medium {medium:?}"),
         };
 
         let lower = unsafe {

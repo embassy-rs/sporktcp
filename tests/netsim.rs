@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::BinaryHeap;
 use std::fmt::Write as _;
 use std::io::Write as _;
@@ -9,7 +9,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha20Rng;
 use xarxa::iface::{Config, Interface, SocketHandle, SocketSet};
 use xarxa::phy::Tracer;
-use xarxa::phy::{self, ChecksumCapabilities, Device, DeviceCapabilities, Medium};
+use xarxa::phy::{self, ChecksumCapabilities, Device, DeviceCapabilities, DriverMedium};
 use xarxa::socket::tcp;
 use xarxa::time::{Duration, Instant};
 use xarxa::wire::{EthernetAddress, HardwareAddress, IpAddress, IpCidr};
@@ -199,6 +199,8 @@ fn run_test(case: TestSpec) -> TestResult {
     assert!(case.flows.len() < 256, "too many flows");
 
     let mut time = Instant::ZERO;
+    // The simulation clock, shared with every `QueueDevice`.
+    let now = Rc::new(Cell::new(time));
 
     let bottleneck_a_to_b = Rc::new(RefCell::new(Bottleneck::new(case.bandwidth, case.capacity)));
     let bottleneck_b_to_a = Rc::new(RefCell::new(Bottleneck::new(case.bandwidth, case.capacity)));
@@ -234,19 +236,19 @@ fn run_test(case: TestSpec) -> TestResult {
             Rc::clone(&bottleneck_a_to_b),
             Rc::clone(&wire_a_to_b),
             Rc::clone(&wire_b_to_a),
-            Medium::Ethernet,
+            DriverMedium::Ethernet,
+            Rc::clone(&now),
         );
         let device_b = QueueDevice::new(
             Rc::clone(&bottleneck_b_to_a),
             Rc::clone(&wire_b_to_a),
             Rc::clone(&wire_a_to_b),
-            Medium::Ethernet,
+            DriverMedium::Ethernet,
+            Rc::clone(&now),
         );
 
-        let mut device_a =
-            Tracer::new(device_a, |_timestamp, _printer| log::trace!("{}", _printer));
-        let mut device_b =
-            Tracer::new(device_b, |_timestamp, _printer| log::trace!("{}", _printer));
+        let mut device_a = Tracer::new(device_a, |_printer| log::trace!("{}", _printer));
+        let mut device_b = Tracer::new(device_b, |_printer| log::trace!("{}", _printer));
 
         let mut iface_a = Interface::new(Config::new(mac_a), &mut device_a, time);
         iface_a.update_ip_addrs(|a| a.push(IpCidr::new(ip_a, 24)).unwrap());
@@ -292,6 +294,7 @@ fn run_test(case: TestSpec) -> TestResult {
     }
 
     while flows.iter().any(|f| f.received < f.target) {
+        now.set(time);
         *CLOCK.lock().unwrap() = (time, ' ');
         log::info!("loop");
 
@@ -344,6 +347,7 @@ fn run_test(case: TestSpec) -> TestResult {
             .expect("no pending event");
 
         time = time.max(next_time);
+        now.set(time);
     }
 
     let duration_secs = duration_to_secs(time - Instant::ZERO);
@@ -517,7 +521,9 @@ struct QueueDevice {
     bottleneck: Rc<RefCell<Bottleneck>>,
     tx_wire: Rc<RefCell<Wire>>,
     rx_wire: Rc<RefCell<Wire>>,
-    medium: Medium,
+    medium: DriverMedium,
+    /// The simulation clock, shared with the test loop.
+    now: Rc<Cell<Instant>>,
 }
 
 impl QueueDevice {
@@ -525,13 +531,15 @@ impl QueueDevice {
         bottleneck: Rc<RefCell<Bottleneck>>,
         tx_wire: Rc<RefCell<Wire>>,
         rx_wire: Rc<RefCell<Wire>>,
-        medium: Medium,
+        medium: DriverMedium,
+        now: Rc<Cell<Instant>>,
     ) -> Self {
         Self {
             bottleneck,
             tx_wire,
             rx_wire,
             medium,
+            now,
         }
     }
 }
@@ -554,7 +562,8 @@ impl Device for QueueDevice {
         caps
     }
 
-    fn receive(&mut self, timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+    fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+        let timestamp = self.now.get();
         let mut rx = self.rx_wire.borrow_mut();
         let arrival = rx.peek_arrival()?;
         if arrival > timestamp {
@@ -572,11 +581,11 @@ impl Device for QueueDevice {
         ))
     }
 
-    fn transmit(&mut self, timestamp: Instant) -> Option<Self::TxToken<'_>> {
+    fn transmit(&mut self) -> Option<Self::TxToken<'_>> {
         Some(TxToken {
             bottleneck: &self.bottleneck,
             wire: &self.tx_wire,
-            timestamp,
+            timestamp: self.now.get(),
         })
     }
 }

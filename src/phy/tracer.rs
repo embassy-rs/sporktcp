@@ -1,7 +1,6 @@
 use core::fmt;
 
-use crate::phy::{self, Device, DeviceCapabilities, Medium};
-use crate::time::Instant;
+use crate::phy::{self, Device, DeviceCapabilities, DriverMedium};
 use crate::wire::pretty_print::{PrettyIndent, PrettyPrint};
 
 /// A tracer device.
@@ -11,12 +10,12 @@ use crate::wire::pretty_print::{PrettyIndent, PrettyPrint};
 /// device.
 pub struct Tracer<D: Device> {
     inner: D,
-    writer: fn(Instant, TracerPacket),
+    writer: fn(TracerPacket),
 }
 
 impl<D: Device> Tracer<D> {
     /// Create a tracer device.
-    pub fn new(inner: D, writer: fn(timestamp: Instant, packet: TracerPacket)) -> Tracer<D> {
+    pub fn new(inner: D, writer: fn(packet: TracerPacket)) -> Tracer<D> {
         Tracer { inner, writer }
     }
 
@@ -55,32 +54,29 @@ impl<D: Device> Device for Tracer<D> {
         self.inner.capabilities()
     }
 
-    fn receive(&mut self, timestamp: Instant) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
+    fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         let medium = self.inner.capabilities().medium;
-        self.inner.receive(timestamp).map(|(rx_token, tx_token)| {
+        self.inner.receive().map(|(rx_token, tx_token)| {
             let rx = RxToken {
                 token: rx_token,
                 writer: self.writer,
                 medium,
-                timestamp,
             };
             let tx = TxToken {
                 token: tx_token,
                 writer: self.writer,
                 medium,
-                timestamp,
             };
             (rx, tx)
         })
     }
 
-    fn transmit(&mut self, timestamp: Instant) -> Option<Self::TxToken<'_>> {
+    fn transmit(&mut self) -> Option<Self::TxToken<'_>> {
         let medium = self.inner.capabilities().medium;
-        self.inner.transmit(timestamp).map(|tx_token| TxToken {
+        self.inner.transmit().map(|tx_token| TxToken {
             token: tx_token,
             medium,
             writer: self.writer,
-            timestamp,
         })
     }
 }
@@ -88,9 +84,8 @@ impl<D: Device> Device for Tracer<D> {
 #[doc(hidden)]
 pub struct RxToken<Rx: phy::RxToken> {
     token: Rx,
-    writer: fn(Instant, TracerPacket),
-    medium: Medium,
-    timestamp: Instant,
+    writer: fn(TracerPacket),
+    medium: DriverMedium,
 }
 
 impl<Rx: phy::RxToken> phy::RxToken for RxToken<Rx> {
@@ -99,14 +94,11 @@ impl<Rx: phy::RxToken> phy::RxToken for RxToken<Rx> {
         F: FnOnce(&[u8]) -> R,
     {
         self.token.consume(|buffer| {
-            (self.writer)(
-                self.timestamp,
-                TracerPacket {
-                    buffer,
-                    medium: self.medium,
-                    direction: TracerDirection::RX,
-                },
-            );
+            (self.writer)(TracerPacket {
+                buffer,
+                medium: self.medium,
+                direction: TracerDirection::RX,
+            });
             f(buffer)
         })
     }
@@ -119,9 +111,8 @@ impl<Rx: phy::RxToken> phy::RxToken for RxToken<Rx> {
 #[doc(hidden)]
 pub struct TxToken<Tx: phy::TxToken> {
     token: Tx,
-    writer: fn(Instant, TracerPacket),
-    medium: Medium,
-    timestamp: Instant,
+    writer: fn(TracerPacket),
+    medium: DriverMedium,
 }
 
 impl<Tx: phy::TxToken> phy::TxToken for TxToken<Tx> {
@@ -131,14 +122,11 @@ impl<Tx: phy::TxToken> phy::TxToken for TxToken<Tx> {
     {
         self.token.consume(len, |buffer| {
             let result = f(buffer);
-            (self.writer)(
-                self.timestamp,
-                TracerPacket {
-                    buffer,
-                    medium: self.medium,
-                    direction: TracerDirection::TX,
-                },
-            );
+            (self.writer)(TracerPacket {
+                buffer,
+                medium: self.medium,
+                direction: TracerDirection::TX,
+            });
             result
         })
     }
@@ -154,7 +142,7 @@ pub struct TracerPacket<'a> {
     /// Packet buffer
     pub buffer: &'a [u8],
     /// Packet medium
-    pub medium: Medium,
+    pub medium: DriverMedium,
     /// Direction in which packet is being traced
     pub direction: TracerDirection,
 }
@@ -178,13 +166,13 @@ impl<'a> fmt::Display for TracerPacket<'a> {
         let mut indent = PrettyIndent::new(prefix);
         match self.medium {
             #[cfg(feature = "medium-ethernet")]
-            Medium::Ethernet => crate::wire::EthernetFrame::<&'static [u8]>::pretty_print(
+            DriverMedium::Ethernet => crate::wire::EthernetFrame::<&'static [u8]>::pretty_print(
                 &self.buffer,
                 f,
                 &mut indent,
             ),
             #[cfg(feature = "medium-ip")]
-            Medium::Ip => match crate::wire::IpVersion::of_packet(self.buffer) {
+            DriverMedium::Ip => match crate::wire::IpVersion::of_packet(self.buffer) {
                 #[cfg(feature = "proto-ipv4")]
                 Ok(crate::wire::IpVersion::Ipv4) => {
                     crate::wire::Ipv4Packet::<&'static [u8]>::pretty_print(
@@ -204,7 +192,8 @@ impl<'a> fmt::Display for TracerPacket<'a> {
                 _ => f.write_str("unrecognized IP version"),
             },
             #[cfg(feature = "medium-ieee802154")]
-            Medium::Ieee802154 => Ok(()), // XXX
+            DriverMedium::Ieee802154 => Ok(()), // XXX
+            _ => f.write_str("unrecognized medium"),
         }
     }
 }
@@ -217,10 +206,7 @@ mod tests {
     use super::*;
 
     use crate::phy::ChecksumCapabilities;
-    use crate::{
-        phy::{Device, Loopback, RxToken, TxToken},
-        time::Instant,
-    };
+    use crate::phy::{Device, Loopback, RxToken, TxToken};
 
     #[cfg(any(
         feature = "medium-ethernet",
@@ -229,30 +215,24 @@ mod tests {
     ))]
     #[test]
     fn test_tracer() {
-        type TracerEvent = (Instant, Vec<u8>, Medium, TracerDirection);
+        type TracerEvent = (Vec<u8>, DriverMedium, TracerDirection);
         thread_local! {
             static TRACE_EVENTS: RefCell<VecDeque<TracerEvent>> = const { RefCell::new(VecDeque::new()) };
         }
         TRACE_EVENTS.replace(VecDeque::new());
 
-        let medium = Medium::default();
+        let medium = DriverMedium::default();
 
         let loopback_device = Loopback::new(medium);
-        let mut tracer_device = Tracer::new(loopback_device, |instant, packet| {
+        let mut tracer_device = Tracer::new(loopback_device, |packet| {
             TRACE_EVENTS.with_borrow_mut(|events| {
-                events.push_back((
-                    instant,
-                    packet.buffer.to_owned(),
-                    packet.medium,
-                    packet.direction,
-                ))
+                events.push_back((packet.buffer.to_owned(), packet.medium, packet.direction))
             });
         });
 
         let expected_payload = [1, 2, 3, 4, 5, 6, 7, 8];
 
-        let tx_instant = Instant::from_secs(1);
-        let tx_token = tracer_device.transmit(tx_instant).unwrap();
+        let tx_token = tracer_device.transmit().unwrap();
 
         tx_token.consume(expected_payload.len(), |buf| {
             buf.copy_from_slice(&expected_payload)
@@ -260,18 +240,12 @@ mod tests {
         let last_event = TRACE_EVENTS.with_borrow_mut(|events| events.pop_front());
         assert_eq!(
             last_event,
-            Some((
-                tx_instant,
-                expected_payload.into(),
-                medium,
-                TracerDirection::TX
-            ))
+            Some((expected_payload.into(), medium, TracerDirection::TX))
         );
         let last_event = TRACE_EVENTS.with_borrow_mut(|events| events.pop_front());
         assert_eq!(last_event, None);
 
-        let rx_instant = Instant::from_secs(2);
-        let (rx_token, _) = tracer_device.receive(rx_instant).unwrap();
+        let (rx_token, _) = tracer_device.receive().unwrap();
         let mut rx_pkt = [0; 8];
         rx_token.consume(|buf| rx_pkt.copy_from_slice(buf));
 
@@ -280,12 +254,7 @@ mod tests {
         let last_event = TRACE_EVENTS.with_borrow_mut(|events| events.pop_front());
         assert_eq!(
             last_event,
-            Some((
-                rx_instant,
-                expected_payload.into(),
-                medium,
-                TracerDirection::RX
-            ))
+            Some((expected_payload.into(), medium, TracerDirection::RX))
         );
         let last_event = TRACE_EVENTS.with_borrow_mut(|events| events.pop_front());
         assert_eq!(last_event, None);
@@ -311,7 +280,7 @@ mod tests {
 
         let pkt = TracerPacket {
             buffer: &buffer,
-            medium: Medium::Ethernet,
+            medium: DriverMedium::Ethernet,
             direction: TracerDirection::RX,
         };
 
@@ -345,7 +314,7 @@ mod tests {
 
         let pkt = TracerPacket {
             buffer: &buffer,
-            medium: Medium::Ip,
+            medium: DriverMedium::Ip,
             direction: TracerDirection::TX,
         };
 

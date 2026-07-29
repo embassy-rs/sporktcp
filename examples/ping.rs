@@ -16,7 +16,7 @@ use xarxa::wire::{
     Ipv4Address, Ipv6Address,
 };
 use xarxa::{
-    phy::Medium,
+    phy::DriverMedium,
     time::{Duration, Instant},
 };
 
@@ -106,11 +106,11 @@ fn main() {
 
     // Create interface
     let mut config = match device.capabilities().medium {
-        Medium::Ethernet => {
+        DriverMedium::Ethernet => {
             Config::new(EthernetAddress([0x02, 0x00, 0x00, 0x00, 0x00, 0x01]).into())
         }
-        Medium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
-        Medium::Ieee802154 => todo!(),
+        DriverMedium::Ip => Config::new(xarxa::wire::HardwareAddress::Ip),
+        medium => todo!("{medium:?}"),
     };
     config.random_seed = rand::random();
 

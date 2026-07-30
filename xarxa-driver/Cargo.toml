@@ -20,5 +20,9 @@ defmt = ["dep:defmt"]
 
 # Enable the `PacketMeta::id` field.
 "packetmeta-id" = []
-# Enable the `PacketMeta::timestamp` field.
-"packetmeta-timestamp" = []
+# Enable the `PacketMeta::timestamp` and `PacketMeta::request_timestamp` fields, and
+# `Device::poll_tx_timestamp`.
+#
+# Transmit timestamps are correlated back to the packet that produced them by
+# `PacketMeta::id`, so this requires `packetmeta-id`.
+"packetmeta-timestamp" = ["packetmeta-id"]

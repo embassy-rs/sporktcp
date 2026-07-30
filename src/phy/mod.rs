@@ -15,6 +15,8 @@ This module provides implementations of [Driver]:
     on the host OS.
 */
 
+#[cfg(feature = "packetmeta-timestamp")]
+pub use xarxa_driver::TxTimestamp;
 pub use xarxa_driver::{
     Checksum, ChecksumCapabilities, Device, DeviceCapabilities, PacketMeta, RxToken, Timestamp,
     TxToken,

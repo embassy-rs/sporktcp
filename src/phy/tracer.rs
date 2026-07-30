@@ -54,6 +54,11 @@ impl<D: Device> Device for Tracer<D> {
         self.inner.capabilities()
     }
 
+    #[cfg(feature = "packetmeta-timestamp")]
+    fn poll_tx_timestamp(&mut self) -> Option<phy::TxTimestamp> {
+        self.inner.poll_tx_timestamp()
+    }
+
     fn receive(&mut self) -> Option<(Self::RxToken<'_>, Self::TxToken<'_>)> {
         let medium = self.inner.capabilities().medium;
         self.inner.receive().map(|(rx_token, tx_token)| {

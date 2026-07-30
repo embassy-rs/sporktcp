@@ -98,7 +98,9 @@ defmt = ["dep:defmt", "heapless/defmt", "xarxa-driver/defmt"]
 "socket-tcp-reno" = []
 
 "packetmeta-id" = ["xarxa-driver/packetmeta-id"]
-"packetmeta-timestamp" = ["xarxa-driver/packetmeta-timestamp"]
+# Transmit timestamps are correlated back to the packet that produced them by
+# `PacketMeta::id`, so this requires `packetmeta-id`.
+"packetmeta-timestamp" = ["packetmeta-id", "xarxa-driver/packetmeta-timestamp"]
 
 "async" = []
 

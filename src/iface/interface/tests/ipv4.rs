@@ -1367,7 +1367,7 @@ fn test_raw_socket_rx_fragmentation(#[case] medium: Medium) {
     // Validate the raw socket received one defragmented packet with correct payload.
     let socket = sockets.get_mut::<raw::Socket>(handle);
     assert!(socket.can_recv());
-    let data = socket.recv().expect("raw socket should have a packet");
+    let data = socket.recv().expect("raw socket should have a packet").0;
     let packet = Ipv4Packet::new_unchecked(data);
     let repr = Ipv4Repr::parse(&packet, &ChecksumCapabilities::default()).unwrap();
     assert_eq!(repr.src_addr, src_addr);

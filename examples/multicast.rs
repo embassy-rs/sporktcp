@@ -95,7 +95,7 @@ fn main() {
             match socket.recv() {
                 Err(e) => println!("Recv IGMP error: {e:?}"),
                 Ok(buf) => {
-                    Ipv4Packet::new_checked(buf)
+                    Ipv4Packet::new_checked(buf.0)
                         .and_then(|ipv4_packet| IgmpPacket::new_checked(ipv4_packet.payload()))
                         .and_then(|igmp_packet| IgmpRepr::parse(&igmp_packet))
                         .map(|igmp_repr| println!("IGMP packet: {igmp_repr:?}"))

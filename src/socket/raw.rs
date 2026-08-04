@@ -10,7 +10,9 @@ use crate::socket::PollAt;
 use crate::socket::WakerRegistration;
 
 use crate::storage::Empty;
-use crate::wire::{EthernetAddress, IpProtocol, IpRepr, IpVersion};
+#[cfg(feature = "medium-ethernet")]
+use crate::wire::EthernetAddress;
+use crate::wire::{IpProtocol, IpRepr, IpVersion};
 #[cfg(feature = "proto-ipv4")]
 use crate::wire::{Ipv4Packet, Ipv4Repr};
 #[cfg(feature = "proto-ipv6")]
@@ -20,6 +22,7 @@ use crate::wire::{Ipv6Packet, Ipv6Repr};
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
 pub struct RawMetadata {
+    #[cfg(feature = "medium-ethernet")]
     /// The optional hardware ethernet address from which an incoming datagram was received, or
     /// to which an outgoing datagram will be sent.
     pub address: Option<EthernetAddress>,
